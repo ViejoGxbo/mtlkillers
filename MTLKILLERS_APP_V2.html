@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MTLKILLERS V1</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #141414;
+    --bg2:     #1c1c1c;
+    --bg3:     #242424;
+    --border:  #2e2e2e;
+    --text:    #e8e8e8;
+    --muted:   #666;
+    --dim:     #999;
+    --accent:  #ff3c00;
+    --green:   #39d353;
+    --red:     #ff4444;
+    --blue:    #00b4d8;
+    --mono:    'Courier New', monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 40px;
+  }
+
+  .wrap { width: 100%; max-width: 560px; }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 24px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo { font-size: 22px; font-weight: 700; letter-spacing: 2px; }
+  .logo span { color: var(--accent); }
+  .badge {
+    font-size: 9px; color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 2px 6px; border-radius: 3px;
+    letter-spacing: 1px;
+  }
+
+  /* SECTION */
+  .section { margin-bottom: 20px; }
+  .section-label {
+    font-size: 9px; letter-spacing: 2px;
+    color: var(--muted); text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  /* CARDS */
+  .card-list { display: flex; flex-direction: column; gap: 6px; }
+
+  .card-row {
+    display: flex; gap: 6px; align-items: center;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 10px;
+    transition: border-color 0.15s;
+  }
+  .card-row.done  { border-color: #1a4a1a; }
+  .card-row.error { border-color: #4a1a1a; }
+  .card-row.loading { border-color: var(--accent); }
+
+  .card-num {
+    width: 22px; height: 22px;
+    background: var(--bg3); border-radius: 3px;
+    font-size: 10px; font-weight: 700; color: var(--muted);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .card-num.done  { background: #0d2b0d; color: var(--green); }
+  .card-num.error { background: #2b0d0d; color: var(--red); }
+  .card-num.loading { background: #2b1a00; color: var(--accent); }
+
+  .card-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 10px;
+    outline: none;
+  }
+  .card-input::placeholder { color: var(--muted); }
+
+  .card-info {
+    font-size: 9px; color: var(--green);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 160px;
+  }
+  .card-info.err { color: var(--red); }
+
+  .card-remove {
+    background: none; border: none;
+    color: var(--muted); cursor: pointer;
+    font-size: 11px; padding: 0 2px;
+    transition: color 0.15s; flex-shrink: 0;
+  }
+  .card-remove:hover { color: var(--red); }
+
+  /* BUTTONS */
+  .btn {
+    border: none; border-radius: 4px; cursor: pointer;
+    font-family: var(--mono); font-weight: 700;
+    letter-spacing: 1px; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn:active { transform: scale(0.98); }
+
+  .btn-primary {
+    background: var(--accent); color: #fff;
+    padding: 10px; width: 100%; font-size: 11px;
+    margin-bottom: 6px;
+  }
+  .btn-primary:hover { background: #ff5520; }
+  .btn-primary:disabled { background: var(--bg3); color: var(--muted); cursor: not-allowed; }
+
+  .btn-secondary {
+    background: var(--bg2); color: var(--dim);
+    border: 1px solid var(--border);
+    padding: 8px; font-size: 10px;
+  }
+  .btn-secondary:hover { border-color: #444; color: var(--text); }
+
+  .btn-row { display: flex; gap: 6px; margin-bottom: 6px; }
+  .btn-row .btn { flex: 1; }
+
+  .btn-green {
+    background: #0d2b0d; color: var(--green);
+    border: 1px solid #1a4a1a;
+    padding: 12px; width: 100%; font-size: 13px;
+    margin-bottom: 6px;
+  }
+  .btn-green:hover { background: #123a12; }
+  .btn-green:disabled { background: var(--bg3); color: var(--muted); cursor: not-allowed; border-color: var(--border); }
+
+  /* PROGRESS */
+  .prog-bar { height: 2px; background: var(--bg3); border-radius: 1px; margin: 8px 0; overflow: hidden; }
+  .prog-fill { height: 100%; background: var(--accent); border-radius: 1px; transition: width 0.3s; width: 0%; }
+
+  /* PREVIEW */
+  .preview-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 10px 12px;
+    margin-bottom: 6px;
+  }
+  .preview-name { font-size: 11px; color: var(--text); margin-bottom: 4px; line-height: 1.3; }
+  .preview-meta { font-size: 10px; color: var(--muted); margin-bottom: 6px; }
+  .preview-prices { display: flex; gap: 8px; flex-wrap: wrap; }
+  .price-chip { font-size: 10px; }
+  .price-chip span { color: var(--muted); }
+  .pn { color: var(--text); }
+  .pc { color: var(--blue); }
+  .pd { color: var(--green); }
+
+  /* STEPS */
+  .steps {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 12px 14px;
+  }
+  .step { display: flex; gap: 10px; margin-bottom: 8px; align-items: flex-start; }
+  .step:last-child { margin-bottom: 0; }
+  .step-num {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    font-size: 9px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .step-text { font-size: 10px; color: var(--dim); line-height: 1.5; }
+  .step-text code { color: var(--accent); }
+
+  /* LOG */
+  .log-box {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 8px 10px;
+    height: 80px; overflow-y: auto;
+    font-size: 9px; line-height: 1.7; color: var(--muted);
+  }
+  .log-box::-webkit-scrollbar { width: 3px; }
+  .log-box::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+  .ll-ok   { color: var(--green); display: block; }
+  .ll-err  { color: var(--red);   display: block; }
+  .ll-warn { color: #ff8c00;      display: block; }
+  .ll-info { color: var(--blue);  display: block; }
+  .ll-def  { color: var(--muted); display: block; }
+
+  /* DIVIDER */
+  hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+  /* STATUS */
+  .status-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .status-text { font-size: 10px; color: var(--muted); }
+  .counts { display: flex; gap: 12px; }
+  .count { text-align: center; }
+  .count-n { font-size: 16px; font-weight: 700; display: block; }
+  .count-l { font-size: 8px; color: var(--muted); text-transform: uppercase; display: block; }
+  .ct { color: var(--text); }
+  .cd { color: var(--green); }
+  .cp { color: #ff8c00; }
+  .ce { color: var(--red); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">MTL<span>KILLERS</span></div>
+    <span class="badge">V1</span>
+    <span class="badge" style="margin-left:auto">SODIMAC → PHOTOSHOP</span>
+  </div>
+
+  <!-- STATUS -->
+  <div class="status-row">
+    <span class="status-text" id="statusTxt">Agrega URLs y extrae los datos</span>
+    <div class="counts">
+      <div class="count"><span class="count-n ct" id="cTotal">0</span><span class="count-l">Total</span></div>
+      <div class="count"><span class="count-n cd" id="cDone">0</span><span class="count-l">Listos</span></div>
+      <div class="count"><span class="count-n cp" id="cPend">0</span><span class="count-l">Pend.</span></div>
+      <div class="count"><span class="count-n ce" id="cErrs">0</span><span class="count-l">Errores</span></div>
+    </div>
+  </div>
+
+  <!-- CARDS -->
+  <div class="section">
+    <div class="section-label">
+      URLs de productos
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-secondary" style="padding:3px 8px;font-size:9px" onclick="addCard()">+ Agregar</button>
+        <button class="btn btn-secondary" style="padding:3px 8px;font-size:9px" onclick="addCards(5)">+5</button>
+        <button class="btn btn-secondary" style="padding:3px 8px;font-size:9px" onclick="addCards(10)">+10</button>
+      </div>
+    </div>
+    <div class="card-list" id="cardList"></div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+
+  <!-- ACCIONES -->
+  <div class="section">
+    <button class="btn btn-primary" id="btnFetch" onclick="fetchAll()">
+      ⬇ EXTRAER DATOS DE SODIMAC
+    </button>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="clearAll()">↺ Limpiar todo</button>
+      <button class="btn btn-secondary" onclick="loadFromText()">📋 Pegar lista</button>
+    </div>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="section" id="previewSection" style="display:none">
+    <div class="section-label">Datos extraídos</div>
+    <div id="previewList"></div>
+  </div>
+
+  <!-- GENERAR JSX -->
+  <div class="section" id="generateSection" style="display:none">
+    <div class="btn-row" style="margin-bottom:6px">
+      <button class="btn btn-green" style="font-size:11px" onclick="generateJsx('ps')">✦ JSX PHOTOSHOP</button>
+      <button class="btn btn-green" style="font-size:11px" onclick="generateJsx('ai')">✦ JSX ILLUSTRATOR</button>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-text">Descarga el archivo <code>mtlkillers_apply.jsx</code></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-text">Abre tu PSD en Photoshop</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-text"><code>Archivo → Scripts → Ejecutar script...</code></div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-text">Selecciona el JSX descargado → Las capas se llenan automáticamente</div></div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- LOG -->
+  <div class="section">
+    <div class="section-label">
+      Log
+      <button class="btn btn-secondary" style="padding:2px 8px;font-size:9px" onclick="clearLog()">limpiar</button>
+    </div>
+    <div class="log-box" id="logBox"></div>
+  </div>
+
+</div>
+
+<!-- PASTE MODAL -->
+<div id="pasteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:100;display:none;align-items:center;justify-content:center;">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:20px;width:90%;max-width:480px;">
+    <div style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Pegar lista de URLs (una por línea)</div>
+    <textarea id="pasteArea" style="width:100%;height:140px;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:10px;padding:8px;border-radius:3px;resize:none;outline:none" placeholder="https://www.sodimac.com.pe/...&#10;https://www.sodimac.com.pe/...&#10;https://www.sodimac.com.pe/..."></textarea>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn btn-primary" style="flex:1;margin:0;font-size:10px" onclick="confirmPaste()">Agregar URLs</button>
+      <button class="btn btn-secondary" style="flex:1;font-size:10px" onclick="closePaste()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── ESTADO ───────────────────────────────────────────────
+var cards = [];
+var cardId = 0;
+
+// ── LOG ──────────────────────────────────────────────────
+function ts() {
+  var d = new Date();
+  return [d.getHours(),d.getMinutes(),d.getSeconds()].map(function(x){return('0'+x).slice(-2);}).join(':');
+}
+function log(msg, type) {
+  var box = document.getElementById('logBox');
+  var el  = document.createElement('span');
+  el.className = 'll-' + (type||'def');
+  el.textContent = '['+ts()+'] ' + msg;
+  box.appendChild(el);
+  box.scrollTop = box.scrollHeight;
+}
+function clearLog() { document.getElementById('logBox').innerHTML = ''; }
+
+function setStatus(txt) { document.getElementById('statusTxt').textContent = txt; }
+
+function setProgress(pct) { document.getElementById('progFill').style.width = pct + '%'; }
+
+// ── CARDS UI ─────────────────────────────────────────────
+function addCard() {
+  var id = ++cardId;
+  var card = { id:id, url:'', data:null, status:'empty' };
+  cards.push(card);
+  renderCard(card);
+  updateCounts();
+  // Focus en el nuevo input
+  setTimeout(function(){ var el = document.getElementById('curl-'+id); if(el) el.focus(); }, 50);
+}
+
+function addCards(n) { for(var i=0;i<n;i++) addCard(); }
+
+function removeCard(id) {
+  cards = cards.filter(function(c){ return c.id !== id; });
+  var el = document.getElementById('crow-'+id);
+  if(el) el.remove();
+  updateCounts();
+  updateSections();
+}
+
+function renderCard(card) {
+  var list = document.getElementById('cardList');
+  var row  = document.createElement('div');
+  row.className = 'card-row';
+  row.id = 'crow-' + card.id;
+  row.innerHTML =
+    '<div class="card-num" id="cnum-'+card.id+'">'+card.id+'</div>' +
+    '<input class="card-input" id="curl-'+card.id+'" placeholder="https://www.sodimac.com.pe/..." ' +
+      'onchange="setUrl('+card.id+',this.value)" ' +
+      'onkeydown="if(event.key===\'Enter\')fetchOne('+card.id+')" />' +
+    '<span class="card-info" id="cinfo-'+card.id+'"></span>' +
+    '<button class="card-remove" onclick="removeCard('+card.id+')" title="Eliminar">✕</button>';
+  list.appendChild(row);
+}
+
+function setUrl(id, url) {
+  var card = cards.find(function(c){ return c.id===id; });
+  if(card) card.url = url.trim();
+}
+
+function setCardStatus(card, status) {
+  card.status = status;
+  var row = document.getElementById('crow-'+card.id);
+  var num = document.getElementById('cnum-'+card.id);
+  if(row) row.className = 'card-row ' + (status==='done'?'done':status==='error'?'error':status==='loading'?'loading':'');
+  if(num) {
+    num.className = 'card-num ' + (status==='done'?'done':status==='error'?'error':status==='loading'?'loading':'');
+    num.textContent = status==='done'?'✓':status==='error'?'✕':status==='loading'?'…':card.id;
+  }
+  updateCounts();
+}
+
+function setCardInfo(card, msg, isErr) {
+  var el = document.getElementById('cinfo-'+card.id);
+  if(el){ el.textContent = msg; el.className = 'card-info' + (isErr?' err':''); }
+}
+
+function updateCounts() {
+  document.getElementById('cTotal').textContent = cards.length;
+  document.getElementById('cDone').textContent  = cards.filter(function(c){ return c.status==='done'; }).length;
+  document.getElementById('cPend').textContent  = cards.filter(function(c){ return c.status==='empty'||c.status==='loading'; }).length;
+  document.getElementById('cErrs').textContent  = cards.filter(function(c){ return c.status==='error'; }).length;
+}
+
+function updateSections() {
+  var done = cards.filter(function(c){ return c.status==='done' && c.data; });
+  document.getElementById('previewSection').style.display  = done.length ? 'block' : 'none';
+  document.getElementById('generateSection').style.display = done.length ? 'block' : 'none';
+  renderPreviews(done);
+}
+
+function renderPreviews(done) {
+  var list = document.getElementById('previewList');
+  list.innerHTML = '';
+  done.forEach(function(card) {
+    var d = card.data;
+    var div = document.createElement('div');
+    div.className = 'preview-card';
+    div.innerHTML =
+      '<div class="preview-name">'+escHtml(d.nombre)+'</div>' +
+      '<div class="preview-meta">SKU: '+d.sku+' &nbsp;|&nbsp; '+d.marca+' &nbsp;|&nbsp; <span style="color:'+(d.stock==='DISPONIBLE'?'var(--green)':'var(--red)')+'">'+d.stock+'</span></div>' +
+      '<div class="preview-prices">' +
+        '<div class="price-chip pn"><span>Normal: </span>S/'+d.precioNormal+'</div>' +
+        '<div class="price-chip pc"><span>CMR: </span>S/'+d.precioCmr+'</div>' +
+        '<div class="price-chip pd"><span>Desc: </span>'+d.descuento+'</div>' +
+      '</div>';
+    list.appendChild(div);
+  });
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── PASTE MODAL ──────────────────────────────────────────
+function loadFromText() {
+  var m = document.getElementById('pasteModal');
+  m.style.display = 'flex';
+  document.getElementById('pasteArea').value = '';
+  document.getElementById('pasteArea').focus();
+}
+function closePaste() { document.getElementById('pasteModal').style.display = 'none'; }
+function confirmPaste() {
+  var lines = document.getElementById('pasteArea').value
+    .split('\n').map(function(l){ return l.trim(); })
+    .filter(function(l){ return l.startsWith('http'); });
+  lines.forEach(function(url) {
+    var id = ++cardId;
+    var card = { id:id, url:url, data:null, status:'empty' };
+    cards.push(card);
+    renderCard(card);
+    document.getElementById('curl-'+id).value = url;
+  });
+  updateCounts();
+  closePaste();
+  log('Agregadas '+lines.length+' URLs', 'info');
+}
+
+function clearAll() {
+  cards = [];
+  cardId = 0;
+  document.getElementById('cardList').innerHTML = '';
+  document.getElementById('previewList').innerHTML = '';
+  document.getElementById('previewSection').style.display = 'none';
+  document.getElementById('generateSection').style.display = 'none';
+  setProgress(0);
+  updateCounts();
+  log('Lista limpiada', 'def');
+}
+
+// ── SCRAPER ──────────────────────────────────────────────
+var SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+){3,}$/i;
+function isSlug(s){ return !s||SLUG_RE.test(String(s).trim())||String(s).trim().length<4; }
+function bestName(){
+  for(var i=0;i<arguments.length;i++){
+    var v=arguments[i];
+    if(v&&typeof v==='string'&&!isSlug(v.trim()))return v.trim();
+  }
+  return null;
+}
+function dig(obj,key,d){
+  d=d||0;if(d>10||!obj||typeof obj!=='object')return null;
+  if(key in obj)return obj[key];
+  var ks=Object.keys(obj);
+  for(var i=0;i<ks.length;i++){var r=dig(obj[ks[i]],key,d+1);if(r!==null&&r!==undefined)return r;}
+  return null;
+}
+function fmtPrice(raw){
+  if(!raw&&raw!==0)return null;
+  var n=parseFloat(String(raw).replace(/[^0-9.]/g,''));
+  if(isNaN(n))return null;
+  var parts=n.toFixed(2).split('.');
+  return parseInt(parts[0],10).toLocaleString('es-PE')+(parts[1]&&parts[1]!=='00'?','+parts[1]:'');
+}
+function splitPrice(fmt){
+  if(!fmt)return{entero:'0',decimal:'00'};
+  var parts=String(fmt).replace(/[S\/\s]/g,'').split(',');
+  return{entero:parts[0],decimal:parts[1]||'00'};
+}
+
+function parseProduct(nd){
+  var props=nd&&nd.props;if(!props)throw new Error('Sin props');
+  var pp=props.pageProps||{};
+  var p=pp.productData||null;
+  if(!p){var id=pp.initialData||{};
+    p=(id.product&&typeof id.product==='object'?id.product:null)
+     ||(pp.product&&typeof pp.product==='object'?pp.product:null)
+     ||(id.data&&id.data.product?id.data.product:null)
+     ||dig(props,'productData')||dig(props,'product');}
+  if(!p||typeof p!=='object')throw new Error('Producto no encontrado');
+  var esPeru=!!pp.productData;
+
+  var nombre=bestName(p.displayName,p.productName,p.name,p.title,dig(p,'displayName'),dig(p,'productName'),dig(p,'name'))||'Sin nombre';
+  var sku=String(p.sku||p.id||p.productId||(p.variants&&p.variants[0]?p.variants[0].id||p.variants[0].sku:'')||dig(p,'sku')||'—');
+  var br=p.brand||dig(p,'brand');
+  var marca=(br&&typeof br==='object')?(br.name||br.displayName||'—'):(br||p.brandName||dig(p,'brandName')||'—');
+
+  var precioNormal=null,precioCmr=null,precioAntes=null,descuento=null;
+  if(esPeru&&p.variants&&p.variants[0]&&Array.isArray(p.variants[0].prices)){
+    var pa=p.variants[0].prices;
+    for(var i=0;i<pa.length;i++){
+      var item=pa[i];var val=Array.isArray(item.price)?item.price[0]:item.price;
+      if(item.type==='internetPrice'||item.type==='normalPrice'||item.type==='regularPrice'){if(!precioNormal)precioNormal=fmtPrice(val);}
+      else if(item.type==='cmrPrice'||item.type==='offerPrice'){if(!precioCmr)precioCmr=fmtPrice(val);}
+      else if(item.type==='crossed'||item.crossed){if(!precioAntes)precioAntes=fmtPrice(val);}
+    }
+    if(!precioAntes&&precioCmr&&precioNormal){
+      var rn=parseFloat(String(precioNormal).replace(/[^0-9.]/g,'')),rc=parseFloat(String(precioCmr).replace(/[^0-9.]/g,''));
+      if(rn&&rc&&rn>rc){precioAntes=precioNormal;descuento='-'+Math.round(((rn-rc)/rn)*100)+'%';}
+    }
+    if(!descuento&&p.variants[0].discountBadge){var db=p.variants[0].discountBadge;descuento=String(db.label||db.text||db.value||'—');}
+  } else {
+    var pr=p.prices||p.price||p.pricing||dig(p,'prices')||{};
+    var rN=pr.normalPrice||pr.regularPrice||pr.listPrice||dig(p,'normalPrice')||dig(p,'regularPrice');
+    var rC=pr.cmrPrice||pr.cardPrice||dig(p,'cmrPrice')||dig(p,'cardPrice');
+    var rA=pr.previousPrice||pr.originalPrice||dig(p,'previousPrice');
+    var rD=pr.discountPercentage||pr.discount||dig(p,'discountPercentage');
+    precioNormal=fmtPrice(rN);precioCmr=fmtPrice(rC);precioAntes=fmtPrice(rA);
+    if(rD){var dn=parseInt(String(rD).replace(/\D/g,''),10);if(!isNaN(dn)&&dn>0)descuento='-'+dn+'%';}
+    if(!descuento&&rN&&rA){var a=parseInt(String(rN).replace(/\D/g,''),10),b=parseInt(String(rA).replace(/\D/g,''),10);if(a&&b&&b>a)descuento='-'+Math.round(((b-a)/b)*100)+'%';}
+  }
+
+  var stock='DESCONOCIDO';
+  if(esPeru){if(p.isOutOfStock===false)stock='DISPONIBLE';else if(p.isOutOfStock===true)stock='AGOTADO';}
+  else{var sv=p.availability||p.stockStatus||p.inStock||dig(p,'availability');if(sv!=null){var ss=String(sv).toUpperCase();if(['TRUE','INSTOCK','IN_STOCK','AVAILABLE','DISPONIBLE','1'].includes(ss))stock='DISPONIBLE';else if(['FALSE','OUTOFSTOCK','OUT_OF_STOCK','AGOTADO','0'].includes(ss))stock='AGOTADO';}}
+
+  var imgUrl=null;
+  if(esPeru){if(p.variants&&p.variants[0]&&p.variants[0].medias&&p.variants[0].medias.length>0){imgUrl=p.variants[0].medias[0].url||null;if(imgUrl&&imgUrl.includes('media.falabella.com'))imgUrl=imgUrl.replace(/\/public$/,'')+'/1500/1500/fit/public';}}
+  else{var imgs=p.images||p.media||dig(p,'images');if(Array.isArray(imgs)&&imgs.length>0){var fi=imgs[0];imgUrl=(typeof fi==='string'?fi:null)||fi.url||fi.src||fi.hdUrl||fi.largeUrl;}else if(imgs&&typeof imgs==='object')imgUrl=imgs.hdUrl||imgs.largeUrl||imgs.url;if(!imgUrl)imgUrl=p.imageUrl||p.image||dig(p,'hdUrl')||dig(p,'imageUrl');if(imgUrl)imgUrl=String(imgUrl).replace(/(_S|_M|_thumb|_small)/gi,'_L').replace(/\?.*$/,'');}
+
+  var sp=splitPrice(precioNormal);
+  return{nombre,sku,marca,precioNormal:precioNormal||'—',precioCmr:precioCmr||'—',precioAntes:precioAntes||'—',descuento:descuento||'—',precioEntero:sp.entero,precioDecimal:sp.decimal,stock,imgUrl};
+}
+
+// Proxies CORS en orden de prioridad
+var CORS_PROXIES = [
+  'https://corsproxy.io/?',
+  'https://api.allorigins.win/raw?url=',
+  'https://api.codetabs.com/v1/proxy?quest='
+];
+
+async function fetchWithProxy(url) {
+  var lastErr = null;
+  for (var i = 0; i < CORS_PROXIES.length; i++) {
+    try {
+      var proxyUrl = CORS_PROXIES[i] + encodeURIComponent(url);
+      var controller = new AbortController();
+      var timer = setTimeout(function(){ controller.abort(); }, 10000);
+      var res = await fetch(proxyUrl, { signal: controller.signal });
+      clearTimeout(timer);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      var text = await res.text();
+      if (text && text.length > 500) return text;
+      throw new Error('Respuesta vacia');
+    } catch(e) {
+      lastErr = e;
+      log('Proxy '+(i+1)+' fallido, intentando siguiente...', 'warn');
+    }
+  }
+  throw new Error('Todos los proxies fallaron: ' + (lastErr ? lastErr.message : ''));
+}
+
+async function scrapeUrl(url) {
+  var html = await fetchWithProxy(url);
+  var m = html.match(/<script[^>]+id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
+  if(!m) throw new Error('No se encontro __NEXT_DATA__');
+  return parseProduct(JSON.parse(m[1]));
+}
+
+// ── ACCIONES ─────────────────────────────────────────────
+async function fetchOne(id) {
+  var card = cards.find(function(c){ return c.id===id; });
+  if(!card) return;
+  var urlEl = document.getElementById('curl-'+id);
+  var url = (urlEl ? urlEl.value : card.url).trim();
+  if(!url){ log('Card #'+id+': sin URL','warn'); return; }
+  card.url = url;
+  setCardStatus(card, 'loading');
+  setCardInfo(card, '⟳ Cargando...');
+  try {
+    var data = await scrapeUrl(url);
+    card.data = data;
+    setCardStatus(card, 'done');
+    setCardInfo(card, data.nombre.substring(0,25)+'...');
+    log('Card #'+id+' OK: '+data.nombre.substring(0,40), 'ok');
+    log('  S/'+data.precioNormal+' | CMR: S/'+data.precioCmr+' | '+data.descuento, 'info');
+  } catch(e) {
+    setCardStatus(card, 'error');
+    setCardInfo(card, e.message, true);
+    log('Card #'+id+' ERROR: '+e.message, 'err');
+  }
+  updateSections();
+}
+
+async function fetchAll() {
+  var pending = cards.filter(function(c){ return c.status==='empty'||c.status==='error'; });
+  // También leer URLs de inputs que no se han guardado aún
+  cards.forEach(function(card) {
+    var el = document.getElementById('curl-'+card.id);
+    if(el && el.value.trim() && !card.url) card.url = el.value.trim();
+    if(el && el.value.trim() !== card.url) card.url = el.value.trim();
+  });
+  pending = cards.filter(function(c){
+    var el = document.getElementById('curl-'+c.id);
+    var url = el ? el.value.trim() : c.url;
+    return url && (c.status==='empty'||c.status==='error');
+  });
+  if(!pending.length){ log('No hay URLs pendientes','warn'); return; }
+  document.getElementById('btnFetch').disabled = true;
+  setStatus('Extrayendo '+pending.length+' productos...');
+  log('Extrayendo '+pending.length+' productos...','info');
+  for(var i=0;i<pending.length;i++){
+    setProgress(Math.round((i/pending.length)*90));
+    await fetchOne(pending[i].id);
+  }
+  setProgress(100);
+  setTimeout(function(){ setProgress(0); }, 1000);
+  document.getElementById('btnFetch').disabled = false;
+  var done = cards.filter(function(c){ return c.status==='done'; }).length;
+  setStatus(done+' productos listos');
+}
+
+// ── GENERAR JSX ─────────────────────────────────────────────
+function generateJsx(target) {
+  var done = cards.filter(function(c){ return c.status==='done' && c.data; });
+  if(!done.length){ log('No hay productos listos','warn'); return; }
+
+  function esc(s){ return String(s||'').replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,' ').replace(/\r/g,''); }
+
+  var varsCode = 'var products = [];\n';
+  done.forEach(function(card, i) {
+    var d = card.data;
+    varsCode +=
+      'products['+i+'] = {' +
+      'nombre:"'+esc(d.nombre)+'",' +
+      'sku:"'+esc(d.sku)+'",' +
+      'marca:"'+esc(d.marca)+'",' +
+      'precioEntero:"'+esc(d.precioEntero)+'",' +
+      'precioDecimal:"'+esc(d.precioDecimal)+'",' +
+      'descuento:"'+esc(d.descuento)+'",' +
+      'precioNormal:"'+esc(d.precioNormal)+'",' +
+      'precioCmr:"'+esc(d.precioCmr)+'",' +
+      'stock:"'+esc(d.stock)+'"}\n;';
+  });
+
+  var jsx = '';
+
+  if (target === 'ps') {
+    // ── PHOTOSHOP JSX ──
+    jsx =
+'#target photoshop\n'+
+'// MTLKILLERS V1 — Photoshop\n'+
+'// Archivo > Scripts > Ejecutar script...\n\n'+
+varsCode+'\n'+
+'var exportDir = Folder.desktop + "/EXPORT_CARDS";\n'+
+'var exportFolder = new Folder(exportDir);\n'+
+'if (!exportFolder.exists) exportFolder.create();\n\n'+
+'function findLayer(name, layers) {\n'+
+'  for (var i=0; i<layers.length; i++) {\n'+
+'    if (layers[i].name === name) return layers[i];\n'+
+'    try { if (layers[i].layers && layers[i].layers.length > 0) {\n'+
+'      var f = findLayer(name, layers[i].layers); if (f) return f;\n'+
+'    }} catch(e) {}\n'+
+'  }\n'+
+'  return null;\n'+
+'}\n\n'+
+'function getContainers(doc) {\n'+
+'  var containers = [];\n'+
+'  for (var i=0; i<doc.layers.length; i++) {\n'+
+'    try { if (doc.layers[i].isArtboard) containers.push(doc.layers[i]); } catch(e) {}\n'+
+'  }\n'+
+'  if (containers.length > 0) return containers;\n'+
+'  for (var i=0; i<doc.layers.length; i++) {\n'+
+'    var n = doc.layers[i].name;\n'+
+'    if (/^\\d+$/.test(n) || /^(card|mesa|artboard)\\s*\\d+$/i.test(n)) containers.push(doc.layers[i]);\n'+
+'  }\n'+
+'  if (containers.length > 0) return containers;\n'+
+'  containers.push({name:"doc", layers:doc.layers});\n'+
+'  return containers;\n'+
+'}\n\n'+
+'var doc;\n'+
+'try { doc = app.activeDocument; }\n'+
+'catch(e) { alert("Abre tu PSD en Photoshop primero."); exit(); }\n\n'+
+'var containers = getContainers(doc);\n'+
+'var resultLog  = [];\n\n'+
+'for (var i=0; i<products.length; i++) {\n'+
+'  var d  = products[i];\n'+
+'  var ab = containers[i];\n'+
+'  if (!ab) { resultLog.push("Card #"+(i+1)+": sin contenedor"); continue; }\n'+
+'  var layerList = ab.layers || doc.layers;\n'+
+'  var textMaps  = [\n'+
+'    {name:"TXT_PRECIO",    val:d.precioEntero},\n'+
+'    {name:"TXT_DECIMAL",   val:d.precioDecimal},\n'+
+'    {name:"TXT_SKU",       val:d.sku},\n'+
+'    {name:"TXT_DESC",      val:d.nombre},\n'+
+'    {name:"TXT_DESCUENTO", val:d.descuento}\n'+
+'  ];\n'+
+'  var ok=[], miss=[];\n'+
+'  for (var j=0; j<textMaps.length; j++) {\n'+
+'    var layer = findLayer(textMaps[j].name, layerList);\n'+
+'    if (layer) { try { layer.textItem.contents=String(textMaps[j].val); ok.push(textMaps[j].name); } catch(e){miss.push(textMaps[j].name);}}\n'+
+'    else miss.push(textMaps[j].name);\n'+
+'  }\n'+
+'  try {\n'+
+'    try { app.activeDocument.activeLayer = ab; } catch(e) {}\n'+
+'    var fname = exportDir+"\\\\MTLKILLERS_"+d.sku+"_CARD.jpg";\n'+
+'    var jo = new JPEGSaveOptions(); jo.quality=10; jo.embedColorProfile=true;\n'+
+'    app.activeDocument.saveAs(new File(fname), jo, true, Extension.LOWERCASE);\n'+
+'    resultLog.push("Card #"+(i+1)+" ["+d.sku+"] OK | "+ok.length+"/5"+(miss.length?" | Sin: "+miss.join(","):""));\n'+
+'  } catch(e) { resultLog.push("Card #"+(i+1)+" ERROR: "+e.message); }\n'+
+'}\n\n'+
+'alert("MTLKILLERS PS completado!\\n\\n"+resultLog.join("\\n")+"\\n\\nGuardado en:\\n"+exportDir);\n';
+
+  } else {
+    // ── ILLUSTRATOR JSX ──
+    jsx =
+'#target illustrator\n'+
+'// MTLKILLERS V1 — Illustrator\n'+
+'// Archivo > Scripts > Ejecutar script...\n\n'+
+varsCode+'\n'+
+'var exportDir = Folder.desktop + "/EXPORT_CARDS";\n'+
+'var exportFolder = new Folder(exportDir);\n'+
+'if (!exportFolder.exists) exportFolder.create();\n\n'+
+'// Buscar text frame por nombre en una capa\n'+
+'function findTextFrame(name, layer) {\n'+
+'  try {\n'+
+'    for (var i=0; i<layer.textFrames.length; i++) {\n'+
+'      if (layer.textFrames[i].name === name) return layer.textFrames[i];\n'+
+'    }\n'+
+'    for (var i=0; i<layer.groupItems.length; i++) {\n'+
+'      var found = findInGroup(name, layer.groupItems[i]);\n'+
+'      if (found) return found;\n'+
+'    }\n'+
+'  } catch(e) {}\n'+
+'  return null;\n'+
+'}\n\n'+
+'function findInGroup(name, group) {\n'+
+'  try {\n'+
+'    for (var i=0; i<group.textFrames.length; i++) {\n'+
+'      if (group.textFrames[i].name === name) return group.textFrames[i];\n'+
+'    }\n'+
+'    for (var i=0; i<group.groupItems.length; i++) {\n'+
+'      var found = findInGroup(name, group.groupItems[i]);\n'+
+'      if (found) return found;\n'+
+'    }\n'+
+'  } catch(e) {}\n'+
+'  return null;\n'+
+'}\n\n'+
+'// Buscar en todas las capas del documento\n'+
+'function findTextFrameInDoc(name, doc) {\n'+
+'  for (var i=0; i<doc.layers.length; i++) {\n'+
+'    var found = findTextFrame(name, doc.layers[i]);\n'+
+'    if (found) return found;\n'+
+'  }\n'+
+'  return null;\n'+
+'}\n\n'+
+'// Obtener capas contenedoras (sublayers numeradas o todas las capas)\n'+
+'function getContainers(doc) {\n'+
+'  var containers = [];\n'+
+'  for (var i=0; i<doc.layers.length; i++) {\n'+
+'    var n = doc.layers[i].name;\n'+
+'    if (/^\\d+$/.test(n) || /^(card|mesa)\\s*\\d+$/i.test(n)) containers.push(doc.layers[i]);\n'+
+'  }\n'+
+'  if (containers.length > 0) return containers;\n'+
+'  // Una sola card — usar el documento completo\n'+
+'  containers.push(null);\n'+
+'  return containers;\n'+
+'}\n\n'+
+'var doc;\n'+
+'try { doc = app.activeDocument; }\n'+
+'catch(e) { alert("Abre tu .ai en Illustrator primero."); exit(); }\n\n'+
+'var containers = getContainers(doc);\n'+
+'var resultLog  = [];\n\n'+
+'for (var i=0; i<products.length; i++) {\n'+
+'  var d   = products[i];\n'+
+'  var con = containers[i];\n\n'+
+'  var textMaps = [\n'+
+'    {name:"TXT_PRECIO",    val:d.precioEntero},\n'+
+'    {name:"TXT_DECIMAL",   val:d.precioDecimal},\n'+
+'    {name:"TXT_SKU",       val:d.sku},\n'+
+'    {name:"TXT_DESC",      val:d.nombre},\n'+
+'    {name:"TXT_DESCUENTO", val:d.descuento}\n'+
+'  ];\n\n'+
+'  var ok=[], miss=[];\n'+
+'  for (var j=0; j<textMaps.length; j++) {\n'+
+'    var tf = con ? findTextFrame(textMaps[j].name, con) : findTextFrameInDoc(textMaps[j].name, doc);\n'+
+'    if (tf) {\n'+
+'      try { tf.contents = String(textMaps[j].val); ok.push(textMaps[j].name); }\n'+
+'      catch(e) { miss.push(textMaps[j].name+"(err)"); }\n'+
+'    } else { miss.push(textMaps[j].name); }\n'+
+'  }\n\n'+
+'  // Exportar como JPG\n'+
+'  try {\n'+
+'    var fname  = exportDir + "/MTLKILLERS_" + d.sku + "_CARD.jpg";\n'+
+'    var eo     = new ExportOptionsJPEG();\n'+
+'    eo.qualitySetting = 80;\n'+
+'    eo.antiAliasing   = true;\n'+
+'    eo.resolution     = 150;\n'+
+'    doc.exportFile(new File(fname), ExportType.JPEG, eo);\n'+
+'    resultLog.push("Card #"+(i+1)+" ["+d.sku+"] OK | "+ok.length+"/5"+(miss.length?" | Sin: "+miss.join(","):""));\n'+
+'  } catch(e) { resultLog.push("Card #"+(i+1)+" ERROR: "+e.message); }\n'+
+'}\n\n'+
+'alert("MTLKILLERS AI completado!\\n\\n"+resultLog.join("\\n")+"\\n\\nGuardado en:\\n"+exportDir);\n';
+  }
+
+  // Descargar
+  var filename = target === 'ps' ? 'mtlkillers_photoshop.jsx' : 'mtlkillers_illustrator.jsx';
+  var blob = new Blob([jsx], { type: 'text/plain' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href   = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+  log('Descargado: ' + filename, 'ok');
+  log(target==='ps' ? 'PS: Archivo > Scripts > Ejecutar script' : 'AI: Archivo > Scripts > Ejecutar script', 'info');
+}
+
+// ── INIT ─────────────────────────────────────────────────
+addCard();
+addCard();
+addCard();
+log('MTLKILLERS V1 listo', 'ok');
+log('Pega URLs de Sodimac y presiona Extraer datos', 'info');
+</script>
+</body>
+</html>
