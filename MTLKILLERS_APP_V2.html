@@ -512,20 +512,20 @@ function parseProduct(nd){
   var esPeru=!!pp.productData;
 
   var nombre=bestName(p.displayName,p.productName,p.name,p.title,dig(p,'displayName'),dig(p,'productName'),dig(p,'name'))||'Sin nombre';
-  // Cód. tienda — extraer desde URL de imagen (ej: sodimacPE/4390245_02)
+  // Cód. tienda — extraer desde URL de imagen (ej: sodimacPE/3929868_01/public)
   var skuTienda = null;
   if(esPeru) {
-    // Buscar en medias del variant
-    var mediasArr = (p.variants&&p.variants[0]&&p.variants[0].medias) ? p.variants[0].medias : (p.medias||[]);
-    for(var mi=0; mi<mediasArr.length; mi++) {
-      var murl = mediasArr[mi] && mediasArr[mi].url ? mediasArr[mi].url : '';
-      var mMatch = murl.match(/sodimacPE\/([0-9]+)[_\/]/i);
-      if(mMatch && mMatch[1]) { skuTienda = mMatch[1]; break; }
-    }
-    // Buscar en HTML del producto si no se encontró
+    try {
+      var v0medias = p.variants[0].medias;
+      for(var mi=0; mi<v0medias.length; mi++) {
+        var murl = v0medias[mi].url || '';
+        var mMatch = murl.match(/sodimacPE\/([0-9]+)[_\/]/i);
+        if(mMatch && mMatch[1]) { skuTienda = mMatch[1]; break; }
+      }
+    } catch(e) {}
     if(!skuTienda) {
-      var allMedias = JSON.stringify(p);
-      var mMatch2 = allMedias.match(/sodimacPE\\?\/([0-9]+)[_\/]/i);
+      var allJson = JSON.stringify(p);
+      var mMatch2 = allJson.match(/sodimacPE\/([0-9]+)[_\/]/i);
       if(mMatch2) skuTienda = mMatch2[1];
     }
   }
