@@ -512,7 +512,24 @@ function parseProduct(nd){
   var esPeru=!!pp.productData;
 
   var nombre=bestName(p.displayName,p.productName,p.name,p.title,dig(p,'displayName'),dig(p,'productName'),dig(p,'name'))||'Sin nombre';
-  var sku=String(p.sku||p.id||p.productId||(p.variants&&p.variants[0]?p.variants[0].id||p.variants[0].sku:'')||dig(p,'sku')||'—');
+  // Cód. tienda — extraer desde URL de imagen (ej: sodimacPE/4390245_02)
+  var skuTienda = null;
+  if(esPeru) {
+    // Buscar en medias del variant
+    var mediasArr = (p.variants&&p.variants[0]&&p.variants[0].medias) ? p.variants[0].medias : (p.medias||[]);
+    for(var mi=0; mi<mediasArr.length; mi++) {
+      var murl = mediasArr[mi] && mediasArr[mi].url ? mediasArr[mi].url : '';
+      var mMatch = murl.match(/sodimacPE\/([0-9]+)[_\/]/i);
+      if(mMatch && mMatch[1]) { skuTienda = mMatch[1]; break; }
+    }
+    // Buscar en HTML del producto si no se encontró
+    if(!skuTienda) {
+      var allMedias = JSON.stringify(p);
+      var mMatch2 = allMedias.match(/sodimacPE\\?\/([0-9]+)[_\/]/i);
+      if(mMatch2) skuTienda = mMatch2[1];
+    }
+  }
+  var sku = skuTienda || String(p.sku||p.id||p.productId||(p.variants&&p.variants[0]?p.variants[0].id||p.variants[0].sku:'')||dig(p,'sku')||'—');
   var br=p.brand||dig(p,'brand');
   var marca=(br&&typeof br==='object')?(br.name||br.displayName||'—'):(br||p.brandName||dig(p,'brandName')||'—');
 
