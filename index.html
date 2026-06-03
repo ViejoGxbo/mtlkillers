@@ -932,38 +932,17 @@ varsCode+'\n'+
 'var exportFolder = new Folder(exportDir);\n'+
 'if (!exportFolder.exists) exportFolder.create();\n\n'+
 '// Buscar text frame por nombre en una capa\n'+
-'function findTextFrame(name, layer) {\n'+
+'// Buscar textFrame por nombre dentro de una capa\n'+
+'function findTextFrameInArtboard(name, layer) {\n'+
 '  try {\n'+
 '    for (var i=0; i<layer.textFrames.length; i++) {\n'+
 '      if (layer.textFrames[i].name === name) return layer.textFrames[i];\n'+
 '    }\n'+
-'    for (var i=0; i<layer.groupItems.length; i++) {\n'+
-'      var found = findInGroup(name, layer.groupItems[i]);\n'+
-'      if (found) return found;\n'+
-'    }\n'+
 '  } catch(e) {}\n'+
 '  return null;\n'+
 '}\n\n'+
-'function findInGroup(name, group) {\n'+
-'  try {\n'+
-'    for (var i=0; i<group.textFrames.length; i++) {\n'+
-'      if (group.textFrames[i].name === name) return group.textFrames[i];\n'+
-'    }\n'+
-'    for (var i=0; i<group.groupItems.length; i++) {\n'+
-'      var found = findInGroup(name, group.groupItems[i]);\n'+
-'      if (found) return found;\n'+
-'    }\n'+
-'  } catch(e) {}\n'+
-'  return null;\n'+
-'}\n\n'+
-'// Buscar en todas las capas del documento\n'+
-'function findTextFrameInDoc(name, doc) {\n'+
-'  for (var i=0; i<doc.layers.length; i++) {\n'+
-'    var found = findTextFrame(name, doc.layers[i]);\n'+
-'    if (found) return found;\n'+
-'  }\n'+
-'  return null;\n'+
-'}\n\n'+
+
+
 '// Obtener capas contenedoras (sublayers numeradas o todas las capas)\n'+
 'function getContainers(doc) {\n'+
 '  var containers = [];\n'+
@@ -1019,10 +998,40 @@ varsCode+'\n'+
 '    var ok=[], miss=[];\n'+
 '    for (var j=0; j<textMaps.length; j++) {\n'+
 '      if (!textMaps[j].val) continue;\n'+
-'      var tf = findTextFrame(textMaps[j].name, con) || findTextFrameInDoc(textMaps[j].name, doc);\n'+
+'      var tf = findTextFrameInArtboard(textMaps[j].name, con);\n'+
 '      if (tf) { try { tf.contents=String(textMaps[j].val); ok.push(textMaps[j].name); } catch(e){miss.push(textMaps[j].name);}}\n'+
 '      else miss.push(textMaps[j].name);\n'+
 '    }\n'+
+'    // Visibilidad automatica segun tipo de precio\n'+
+'    var hasCmr  = d.precioCmr !== "—" && d.precioCmr !== "";\n'+
+'    var hasAntes = d.precioAntes !== "—" && d.precioAntes !== "";\n'+
+'    function setVisible(name, visible) {\n'+
+'      try {\n'+
+'        var tf2 = findTextFrameInArtboard(name, con);\n'+
+'        if (tf2) tf2.hidden = !visible;\n'+
+'      } catch(e) {}\n'+
+'      try {\n'+
+'        var pi = doc.pathItems;\n'+
+'        for (var pi2=0; pi2<pi.length; pi2++) {\n'+
+'          if (pi[pi2].name === name) { pi[pi2].hidden = !visible; break; }\n'+
+'        }\n'+
+'      } catch(e) {}\n'+
+'      try {\n'+
+'        var gi = doc.groupItems;\n'+
+'        for (var gi2=0; gi2<gi.length; gi2++) {\n'+
+'          if (gi[gi2].name === name) { gi[gi2].hidden = !visible; break; }\n'+
+'        }\n'+
+'      } catch(e) {}\n'+
+'    }\n'+
+'    // CMR vs Regular\n'+
+'    setVisible("BG_PRECIO_CMR",      hasCmr);\n'+
+'    setVisible("GRP_CMR",            hasCmr);\n'+
+'    setVisible("BG_PRECIO_REGULAR",  !hasCmr);\n'+
+'    setVisible("TXT_PRECIO_REGULAR", hasCmr);\n'+
+'    // Precio antes\n'+
+'    setVisible("TXT_PRECIO_ANTES",   hasAntes);\n'+
+'    setVisible("Precio antes: S/",   hasAntes);\n'+
+'    setVisible("Precio regular:",    hasCmr);\n'+
 '    resultLog.push("["+con.name+"] ["+d.sku+"] OK | "+ok.length+" capas"+(miss.length?" | Sin: "+miss.join(","):""));\n'+
 '  }\n\n'+
 '  // Exportar cada artboard individualmente\n'+
