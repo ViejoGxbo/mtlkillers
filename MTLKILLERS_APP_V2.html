@@ -863,31 +863,53 @@ varsCode+'\n'+
 'catch(e) { alert("Abre tu PSD en Photoshop primero."); exit(); }\n\n'+
 'var containers = getContainers(doc);\n'+
 'var resultLog  = [];\n\n'+
+'// Agrupar containers por numero al final\n'+
+'var grouped = {};\n'+
+'for (var i=0; i<containers.length; i++) {\n'+
+'  var nm = containers[i].name;\n'+
+'  var numMatch = nm.match(/\\d+$/);\n'+
+'  if (!numMatch) continue;\n'+
+'  var num = parseInt(numMatch[0]);\n'+
+'  if (!grouped[num]) grouped[num] = [];\n'+
+'  grouped[num].push(containers[i]);\n'+
+'}\n\n'+
 'for (var i=0; i<products.length; i++) {\n'+
-'  var d  = products[i];\n'+
-'  var ab = containers[i];\n'+
-'  if (!ab) { resultLog.push("Card #"+(i+1)+": sin contenedor"); continue; }\n'+
-'  var layerList = ab.layers || doc.layers;\n'+
-'  var textMaps  = [\n'+
-'    {name:"TXT_PRECIO",    val:d.precioEntero},\n'+
-'    {name:"TXT_DECIMAL",   val:d.precioDecimal},\n'+
-'    {name:"TXT_SKU",       val:d.sku},\n'+
-'    {name:"TXT_DESC",      val:d.nombre},\n'+
-'    {name:"TXT_DESCUENTO", val:d.descuento}\n'+
-'  ];\n'+
-'  var ok=[], miss=[];\n'+
-'  for (var j=0; j<textMaps.length; j++) {\n'+
-'    var layer = findLayer(textMaps[j].name, layerList);\n'+
-'    if (layer) { try { layer.textItem.contents=String(textMaps[j].val); ok.push(textMaps[j].name); } catch(e){miss.push(textMaps[j].name);}}\n'+
-'    else miss.push(textMaps[j].name);\n'+
+'  var d   = products[i];\n'+
+'  var num = i + 1;\n'+
+'  var abs = grouped[num];\n'+
+'  if (!abs || abs.length === 0) { resultLog.push("Card #"+num+": sin artboard"); continue; }\n'+
+'  for (var ai=0; ai<abs.length; ai++) {\n'+
+'    var ab = abs[ai];\n'+
+'    var abName = ab.name.toUpperCase();\n'+
+'    var esLima = abName.indexOf("LIMA") >= 0;\n'+
+'    var esProv = abName.indexOf("PROV") >= 0;\n'+
+'    var layerList = ab.layers || doc.layers;\n'+
+'    var textMaps = [];\n'+
+'    // Capas comunes a Lima y Prov\n'+
+'    textMaps.push({name:"TXT_DESC", val:d.nombre});\n'+
+'    textMaps.push({name:"TXT_SKU",  val:d.sku});\n'+
+'    // Capas solo para Lima (con precios)\n'+
+'    if (esLima || (!esLima && !esProv)) {\n'+
+'      textMaps.push({name:"TXT_PRECIO",         val:d.precioEntero});\n'+
+'      textMaps.push({name:"TXT_DECIMAL",        val:d.precioDecimal});\n'+
+'      textMaps.push({name:"TXT_PRECIO_REGULAR", val:d.precioNormal !== d.precioCmr ? d.precioNormal : ""});\n'+
+'      textMaps.push({name:"TXT_PRECIO_ANTES",   val:d.precioAntes !== "—" ? d.precioAntes : ""});\n'+
+'    }\n'+
+'    var ok=[], miss=[];\n'+
+'    for (var j=0; j<textMaps.length; j++) {\n'+
+'      if (!textMaps[j].val) continue;\n'+
+'      var layer = findLayer(textMaps[j].name, layerList);\n'+
+'      if (layer) { try { layer.textItem.contents=String(textMaps[j].val); ok.push(textMaps[j].name); } catch(e){miss.push(textMaps[j].name);}}\n'+
+'      else miss.push(textMaps[j].name);\n'+
+'    }\n'+
+'    resultLog.push("["+ab.name+"] ["+d.sku+"] OK | "+ok.length+" capas"+(miss.length?" | Sin: "+miss.join(","):""));\n'+
 '  }\n'+
+'  // Exportar una vez por producto\n'+
 '  try {\n'+
-'    try { app.activeDocument.activeLayer = ab; } catch(e) {}\n'+
 '    var fname = exportDir+"\\\\MTLKILLERS_"+d.sku+"_CARD.jpg";\n'+
 '    var jo = new JPEGSaveOptions(); jo.quality=10; jo.embedColorProfile=true;\n'+
 '    app.activeDocument.saveAs(new File(fname), jo, true, Extension.LOWERCASE);\n'+
-'    resultLog.push("Card #"+(i+1)+" ["+d.sku+"] OK | "+ok.length+"/5"+(miss.length?" | Sin: "+miss.join(","):""));\n'+
-'  } catch(e) { resultLog.push("Card #"+(i+1)+" ERROR: "+e.message); }\n'+
+'  } catch(e) { resultLog.push("Export ERROR: "+e.message); }\n'+
 '}\n\n'+
 'alert("MTLKILLERS PS completado!\\n\\n"+resultLog.join("\\n")+"\\n\\nGuardado en:\\n"+exportDir);\n';
 
@@ -957,23 +979,43 @@ varsCode+'\n'+
 'catch(e) { alert("Abre tu .ai en Illustrator primero."); exit(); }\n\n'+
 'var containers = getContainers(doc);\n'+
 'var resultLog  = [];\n\n'+
+'// Agrupar containers por numero al final\n'+
+'var grouped = {};\n'+
+'for (var i=0; i<containers.length; i++) {\n'+
+'  var nm = containers[i].name;\n'+
+'  var numMatch = nm.match(/\\d+$/);\n'+
+'  if (!numMatch) continue;\n'+
+'  var num = parseInt(numMatch[0]);\n'+
+'  if (!grouped[num]) grouped[num] = [];\n'+
+'  grouped[num].push(containers[i]);\n'+
+'}\n\n'+
 'for (var i=0; i<products.length; i++) {\n'+
 '  var d   = products[i];\n'+
-'  var con = containers[i];\n\n'+
-'  var textMaps = [\n'+
-'    {name:"TXT_PRECIO",    val:d.precioEntero},\n'+
-'    {name:"TXT_DECIMAL",   val:d.precioDecimal},\n'+
-'    {name:"TXT_SKU",       val:d.sku},\n'+
-'    {name:"TXT_DESC",      val:d.nombre},\n'+
-'    {name:"TXT_DESCUENTO", val:d.descuento}\n'+
-'  ];\n\n'+
-'  var ok=[], miss=[];\n'+
-'  for (var j=0; j<textMaps.length; j++) {\n'+
-'    var tf = con ? findTextFrame(textMaps[j].name, con) : findTextFrameInDoc(textMaps[j].name, doc);\n'+
-'    if (tf) {\n'+
-'      try { tf.contents = String(textMaps[j].val); ok.push(textMaps[j].name); }\n'+
-'      catch(e) { miss.push(textMaps[j].name+"(err)"); }\n'+
-'    } else { miss.push(textMaps[j].name); }\n'+
+'  var num = i + 1;\n'+
+'  var cons = grouped[num];\n'+
+'  if (!cons || cons.length === 0) continue;\n'+
+'  for (var ai=0; ai<cons.length; ai++) {\n'+
+'    var con = cons[ai];\n'+
+'    var conName = con.name.toUpperCase();\n'+
+'    var esLima = conName.indexOf("LIMA") >= 0;\n'+
+'    var esProv = conName.indexOf("PROV") >= 0;\n'+
+'    var textMaps = [];\n'+
+'    textMaps.push({name:"TXT_DESC", val:d.nombre});\n'+
+'    textMaps.push({name:"TXT_SKU",  val:d.sku});\n'+
+'    if (esLima || (!esLima && !esProv)) {\n'+
+'      textMaps.push({name:"TXT_PRECIO",         val:d.precioEntero});\n'+
+'      textMaps.push({name:"TXT_DECIMAL",        val:d.precioDecimal});\n'+
+'      textMaps.push({name:"TXT_PRECIO_REGULAR", val:d.precioNormal !== d.precioCmr ? d.precioNormal : ""});\n'+
+'      textMaps.push({name:"TXT_PRECIO_ANTES",   val:d.precioAntes !== "—" ? d.precioAntes : ""});\n'+
+'    }\n'+
+'    var ok=[], miss=[];\n'+
+'    for (var j=0; j<textMaps.length; j++) {\n'+
+'      if (!textMaps[j].val) continue;\n'+
+'      var tf = findTextFrame(textMaps[j].name, con) || findTextFrameInDoc(textMaps[j].name, doc);\n'+
+'      if (tf) { try { tf.contents=String(textMaps[j].val); ok.push(textMaps[j].name); } catch(e){miss.push(textMaps[j].name);}}\n'+
+'      else miss.push(textMaps[j].name);\n'+
+'    }\n'+
+'    resultLog.push("["+con.name+"] ["+d.sku+"] OK | "+ok.length+" capas"+(miss.length?" | Sin: "+miss.join(","):""));\n'+
 '  }\n\n'+
 '  // Exportar como JPG\n'+
 '  try {\n'+
