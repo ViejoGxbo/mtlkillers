@@ -258,6 +258,23 @@
   <!-- PROGRESS -->
   <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
 
+  <!-- EXTENSION BANNER -->
+  <div id="extBanner" style="background:#0d2b0d;border:1px solid #1a4a1a;border-radius:4px;padding:8px 12px;margin-bottom:12px;display:none">
+    <div style="font-size:10px;color:var(--green);margin-bottom:4px">✓ EXTENSIÓN CONECTADA — Sin proxies, sin bloqueos</div>
+    <div style="font-size:9px;color:var(--muted)">Extrayendo datos directamente desde Sodimac</div>
+  </div>
+  <div id="extInstall" style="background:#1a1a1a;border:1px solid #333;border-radius:4px;padding:8px 12px;margin-bottom:12px">
+    <div style="font-size:10px;color:var(--muted);margin-bottom:6px">⚡ Para URLs que fallan, instala la extensión MTLKILLERS</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="btn btn-secondary" style="padding:5px 10px;font-size:9px;flex:1" onclick="downloadExtension()">⬇ Descargar extensión</button>
+      <input id="extIdInput" placeholder="Pega el ID de la extensión aquí" style="flex:2;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:9px;padding:5px 8px;border-radius:3px;outline:none" />
+      <button class="btn btn-secondary" style="padding:5px 10px;font-size:9px" onclick="connectExtension()">Conectar</button>
+    </div>
+    <div style="font-size:9px;color:var(--muted);margin-top:5px">
+      1. Descarga → extrae el ZIP → abre <code style="color:var(--accent)">chrome://extensions</code> → activa "Modo desarrollador" → arrastra la carpeta
+    </div>
+  </div>
+
   <!-- ACCIONES -->
   <div class="section">
     <button class="btn btn-primary" id="btnFetch" onclick="fetchAll()">
@@ -470,111 +487,181 @@ function clearAll() {
 }
 
 // ── SCRAPER ──────────────────────────────────────────────
-var SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+){3,}$/i;
-function isSlug(s){ return !s||SLUG_RE.test(String(s).trim())||String(s).trim().length<4; }
-function bestName(){
-  for(var i=0;i<arguments.length;i++){
-    var v=arguments[i];
-    if(v&&typeof v==='string'&&!isSlug(v.trim()))return v.trim();
-  }
-  return null;
-}
-function dig(obj,key,d){
-  d=d||0;if(d>10||!obj||typeof obj!=='object')return null;
-  if(key in obj)return obj[key];
-  var ks=Object.keys(obj);
-  for(var i=0;i<ks.length;i++){var r=dig(obj[ks[i]],key,d+1);if(r!==null&&r!==undefined)return r;}
-  return null;
-}
-function fmtPrice(raw){
-  if(!raw&&raw!==0)return null;
-  var n=parseFloat(String(raw).replace(/[^0-9.]/g,''));
-  if(isNaN(n))return null;
-  var parts=n.toFixed(2).split('.');
-  return parseInt(parts[0],10).toLocaleString('es-PE')+(parts[1]&&parts[1]!=='00'?','+parts[1]:'');
-}
-function splitPrice(fmt){
-  if(!fmt)return{entero:'0',decimal:'00'};
-  var parts=String(fmt).replace(/[S\/\s]/g,'').split(',');
-  return{entero:parts[0],decimal:parts[1]||'00'};
+// ── PARSER (lógica basada en Google Sheets RETAIL PRO) ──────
+
+function nombreValido(t) {
+  if(!t || typeof t !== 'string') return false;
+  var tl = t.toLowerCase();
+  var basura = ['falabella','sodimac','compra internacional','todos los derechos','copyright','.com'];
+  return !basura.some(function(x){ return tl.includes(x); });
 }
 
-function parseProduct(nd){
-  var props=nd&&nd.props;if(!props)throw new Error('Sin props');
-  var pp=props.pageProps||{};
-  var p=pp.productData||null;
-  if(!p){var id=pp.initialData||{};
-    p=(id.product&&typeof id.product==='object'?id.product:null)
-     ||(pp.product&&typeof pp.product==='object'?pp.product:null)
-     ||(id.data&&id.data.product?id.data.product:null)
-     ||dig(props,'productData')||dig(props,'product');}
-  if(!p||typeof p!=='object')throw new Error('Producto no encontrado');
-  var esPeru=!!pp.productData;
+function splitPrice(fmt) {
+  if(!fmt) return {entero:'0', decimal:'00'};
+  var parts = String(fmt).replace(/[S\/\s]/g,'').split(',');
+  return {entero: parts[0], decimal: parts[1]||'00'};
+}
 
-  var nombre=bestName(p.displayName,p.productName,p.name,p.title,dig(p,'displayName'),dig(p,'productName'),dig(p,'name'))||'Sin nombre';
-  // Cód. tienda — extraer desde URL de imagen (ej: sodimacPE/3929868_01/public)
-  var skuTienda = null;
-  if(esPeru) {
-    try {
-      var v0medias = p.variants[0].medias;
-      for(var mi=0; mi<v0medias.length; mi++) {
-        var murl = v0medias[mi].url || '';
-        var mMatch = murl.match(/sodimacPE\/([0-9]+)[_\/]/i);
-        if(mMatch && mMatch[1]) { skuTienda = mMatch[1]; break; }
+function parseProduct(html, url) {
+  // Extraer __NEXT_DATA__
+  var m = html.match(/<script[^>]+id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
+  if(!m) throw new Error('No se encontró __NEXT_DATA__');
+  var data = JSON.parse(m[1]);
+
+  // ── NOMBRE ──────────────────────────────────────────────
+  var nombre = '';
+  var brand  = '';
+
+  function buscar(obj, depth) {
+    if(!obj || typeof obj !== 'object' || depth > 10) return;
+    for(var k in obj) {
+      var v = obj[k];
+      if(!nombre && (k==='displayName'||k==='productName'||k==='name')) {
+        if(typeof v==='string' && nombreValido(v) && v.split(' ').length > 3) {
+          nombre = v;
+        }
       }
-    } catch(e) {}
-    if(!skuTienda) {
-      var allJson = JSON.stringify(p);
-      var mMatch2 = allJson.match(/sodimacPE\/([0-9]+)[_\/]/i);
-      if(mMatch2) skuTienda = mMatch2[1];
+      if(!brand && (k==='brand'||k==='brandName')) {
+        brand = (typeof v==='object' && v) ? (v.name||v.displayName||'') : (v||'');
+      }
+      buscar(v, depth+1);
     }
   }
-  var sku = skuTienda || String(p.sku||p.id||p.productId||(p.variants&&p.variants[0]?p.variants[0].id||p.variants[0].sku:'')||dig(p,'sku')||'—');
-  var br=p.brand||dig(p,'brand');
-  var marca=(br&&typeof br==='object')?(br.name||br.displayName||'—'):(br||p.brandName||dig(p,'brandName')||'—');
+  buscar(data, 0);
 
-  var precioNormal=null,precioCmr=null,precioAntes=null,descuento=null;
-  if(esPeru&&p.variants&&p.variants[0]&&Array.isArray(p.variants[0].prices)){
-    var pa=p.variants[0].prices;
-    for(var i=0;i<pa.length;i++){
-      var item=pa[i];var val=Array.isArray(item.price)?item.price[0]:item.price;
-      if(item.type==='internetPrice'||item.type==='normalPrice'||item.type==='regularPrice'){if(!precioNormal)precioNormal=fmtPrice(val);}
-      else if(item.type==='cmrPrice'||item.type==='offerPrice'){if(!precioCmr)precioCmr=fmtPrice(val);}
-      else if(item.type==='crossed'||item.crossed){if(!precioAntes)precioAntes=fmtPrice(val);}
-    }
-    if(!precioAntes&&precioCmr&&precioNormal){
-      var rn=parseFloat(String(precioNormal).replace(/[^0-9.]/g,'')),rc=parseFloat(String(precioCmr).replace(/[^0-9.]/g,''));
-      if(rn&&rc&&rn>rc){precioAntes=precioNormal;descuento='-'+Math.round(((rn-rc)/rn)*100)+'%';}
-    }
-    if(!descuento&&p.variants[0].discountBadge){var db=p.variants[0].discountBadge;descuento=String(db.label||db.text||db.value||'—');}
-  } else {
-    var pr=p.prices||p.price||p.pricing||dig(p,'prices')||{};
-    var rN=pr.normalPrice||pr.regularPrice||pr.listPrice||dig(p,'normalPrice')||dig(p,'regularPrice');
-    var rC=pr.cmrPrice||pr.cardPrice||dig(p,'cmrPrice')||dig(p,'cardPrice');
-    var rA=pr.previousPrice||pr.originalPrice||dig(p,'previousPrice');
-    var rD=pr.discountPercentage||pr.discount||dig(p,'discountPercentage');
-    precioNormal=fmtPrice(rN);precioCmr=fmtPrice(rC);precioAntes=fmtPrice(rA);
-    if(rD){var dn=parseInt(String(rD).replace(/\D/g,''),10);if(!isNaN(dn)&&dn>0)descuento='-'+dn+'%';}
-    if(!descuento&&rN&&rA){var a=parseInt(String(rN).replace(/\D/g,''),10),b=parseInt(String(rA).replace(/\D/g,''),10);if(a&&b&&b>a)descuento='-'+Math.round(((b-a)/b)*100)+'%';}
+  // Fallback nombre desde slug URL
+  if(!nombre) {
+    var slug = '';
+    try { slug = url.split('/articulo/')[1].split('/')[1] || ''; } catch(e){}
+    nombre = slug.replace(/-/g,' ').replace(/\b\w/g, function(x){ return x.toUpperCase(); }) || 'Producto';
   }
 
-  var stock='DESCONOCIDO';
-  if(esPeru){if(p.isOutOfStock===false)stock='DISPONIBLE';else if(p.isOutOfStock===true)stock='AGOTADO';}
-  else{var sv=p.availability||p.stockStatus||p.inStock||dig(p,'availability');if(sv!=null){var ss=String(sv).toUpperCase();if(['TRUE','INSTOCK','IN_STOCK','AVAILABLE','DISPONIBLE','1'].includes(ss))stock='DISPONIBLE';else if(['FALSE','OUTOFSTOCK','OUT_OF_STOCK','AGOTADO','0'].includes(ss))stock='AGOTADO';}}
+  // ── SKU — Cód. tienda directo del HTML ───────────────────
+  var skuMatch = html.match(/Cód\.\s*tienda[:\s]*([\d]+)/i);
+  var sku = skuMatch ? skuMatch[1] : '';
+  if(!sku) {
+    // Fallback: extraer desde URL de imagen sodimacPE
+    var imgMatch = html.match(/sodimacPE\/([0-9]+)[_\/]/i);
+    if(imgMatch) sku = imgMatch[1];
+  }
+  if(!sku) sku = '—';
 
-  var imgUrl=null;
-  if(esPeru){if(p.variants&&p.variants[0]&&p.variants[0].medias&&p.variants[0].medias.length>0){imgUrl=p.variants[0].medias[0].url||null;if(imgUrl&&imgUrl.includes('media.falabella.com'))imgUrl=imgUrl.replace(/\/public$/,'')+'/1500/1500/fit/public';}}
-  else{var imgs=p.images||p.media||dig(p,'images');if(Array.isArray(imgs)&&imgs.length>0){var fi=imgs[0];imgUrl=(typeof fi==='string'?fi:null)||fi.url||fi.src||fi.hdUrl||fi.largeUrl;}else if(imgs&&typeof imgs==='object')imgUrl=imgs.hdUrl||imgs.largeUrl||imgs.url;if(!imgUrl)imgUrl=p.imageUrl||p.image||dig(p,'hdUrl')||dig(p,'imageUrl');if(imgUrl)imgUrl=String(imgUrl).replace(/(_S|_M|_thumb|_small)/gi,'_L').replace(/\?.*$/,'');}
+  // ── PRECIOS ──────────────────────────────────────────────
+  var precios = [];
 
-  var sp=splitPrice(precioNormal);
-  return{nombre,sku,marca,precioNormal:precioNormal||'—',precioCmr:precioCmr||'—',precioAntes:precioAntes||'—',descuento:descuento||'—',precioEntero:sp.entero,precioDecimal:sp.decimal,stock,imgUrl};
+  function capturarPrecio(obj, depth) {
+    if(!obj || typeof obj !== 'object' || depth > 10) return;
+    for(var k in obj) {
+      var v = obj[k];
+      if(k==='price'||k==='currentPrice'||k==='internetPrice'||k==='sellingPrice'||
+         k==='normalPrice'||k==='regularPrice'||k==='cmrPrice'||k==='offerPrice') {
+        var num = parseFloat(String(v).replace(/[^0-9.]/g,''));
+        if(!isNaN(num) && num > 1 && num < 500000) {
+          var raw = JSON.stringify(obj).toUpperCase();
+          var isCmr = raw.includes('CMR') || k==='cmrPrice' || k==='offerPrice';
+          // Evitar duplicados
+          var exists = precios.some(function(p){ return p.valor === num; });
+          if(!exists) precios.push({valor: num, cmr: isCmr});
+        }
+      }
+      capturarPrecio(v, depth+1);
+    }
+  }
+  capturarPrecio(data, 0);
+  precios.sort(function(a,b){ return a.valor - b.valor; });
+
+  // ── CLASIFICAR PRECIOS ───────────────────────────────────
+  var precioCMR = null, precioRegular = null, precioAntes = null;
+
+  if(precios.length === 1) {
+    precioRegular = precios[0].valor;
+  } else if(precios.length === 2) {
+    var tieneCMR = precios.some(function(x){ return x.cmr; });
+    if(tieneCMR) {
+      precioCMR    = precios[0].valor;
+      precioRegular = precios[1].valor;
+    } else {
+      precioRegular = precios[0].valor;
+      precioAntes   = precios[1].valor;
+    }
+  } else if(precios.length >= 3) {
+    precioCMR     = precios[0].valor;
+    precioRegular = precios[1].valor;
+    precioAntes   = precios[precios.length-1].valor;
+  }
+
+  // ── PRECIO M2 ────────────────────────────────────────────
+  var esM2 = nombre.toLowerCase().includes('m2') || nombre.toLowerCase().includes('m²');
+  if(esM2) {
+    var encontradosM2 = [];
+    var rxM2 = /S\/\s*([\d.,]+)/gi;
+    var match;
+    while((match = rxM2.exec(html)) !== null) {
+      var bloque = html.substring(Math.max(0, match.index-150), match.index+150).toLowerCase();
+      var tieneBasura = ['ahorra','cmr','beneficio','descuento','cupón'].some(function(x){ return bloque.includes(x); });
+      var tieneM2 = bloque.includes('m²') || bloque.includes('m2') || bloque.includes('por m');
+      if(!tieneBasura && tieneM2) {
+        var n = parseFloat(match[1].replace(',','.'));
+        if(!isNaN(n) && n > 5 && n < 1000) encontradosM2.push(n);
+      }
+    }
+    if(encontradosM2.length) precioRegular = Math.min.apply(null, encontradosM2);
+  }
+
+  // ── DESCUENTO ────────────────────────────────────────────
+  var descuento = '—';
+  if(precioCMR && precioRegular) {
+    descuento = '-' + Math.round(((precioRegular - precioCMR) / precioRegular) * 100) + '%';
+  } else if(precioRegular && precioAntes) {
+    descuento = '-' + Math.round(((precioAntes - precioRegular) / precioAntes) * 100) + '%';
+  }
+
+  // ── PRECIO PRINCIPAL ─────────────────────────────────────
+  var principal = precioCMR || precioRegular || 0;
+  var principalStr = principal.toFixed(2);
+  var partes = principalStr.split('.');
+  var precioEntero  = partes[0];
+  var precioDecimal = partes[1] || '00';
+
+  var precioNormalStr = precioRegular ? precioRegular.toFixed(2).replace('.', ',') : '—';
+  var precioCmrStr    = precioCMR    ? precioCMR.toFixed(2).replace('.', ',')    : '—';
+  var precioAntesStr  = precioAntes  ? precioAntes.toFixed(2).replace('.', ',')  : '—';
+
+  // ── STOCK ────────────────────────────────────────────────
+  var stock = 'DESCONOCIDO';
+  if(html.includes('isOutOfStock":false') || html.includes('DISPONIBLE') || html.includes('IN_STOCK')) stock = 'DISPONIBLE';
+  else if(html.includes('isOutOfStock":true') || html.includes('OUT_OF_STOCK')) stock = 'AGOTADO';
+
+  // ── IMAGEN ───────────────────────────────────────────────
+  var imgUrl = null;
+  var imgMatch2 = html.match(/media\.falabella\.com\/sodimacPE\/[0-9]+_01\/public/);
+  if(imgMatch2) {
+    imgUrl = 'https://' + imgMatch2[0].replace('/public', '/1500/1500/fit/public');
+  }
+
+  return {
+    nombre: nombre,
+    sku: sku,
+    marca: brand || '—',
+    precioNormal:  precioNormalStr,
+    precioCmr:     precioCmrStr,
+    precioAntes:   precioAntesStr,
+    descuento:     descuento,
+    precioEntero:  precioEntero,
+    precioDecimal: precioDecimal,
+    stock:         stock,
+    imgUrl:        imgUrl,
+    esM2:          esM2
+  };
 }
 
 // Proxies CORS en orden de prioridad
 var CORS_PROXIES = [
   'https://corsproxy.io/?',
+  'https://thingproxy.freeboard.io/fetch/',
   'https://api.allorigins.win/raw?url=',
-  'https://api.codetabs.com/v1/proxy?quest='
+  'https://api.codetabs.com/v1/proxy?quest=',
+  'https://cors.eu.org/'
 ];
 
 async function fetchWithProxy(url) {
@@ -584,7 +671,14 @@ async function fetchWithProxy(url) {
       var proxyUrl = CORS_PROXIES[i] + encodeURIComponent(url);
       var controller = new AbortController();
       var timer = setTimeout(function(){ controller.abort(); }, 10000);
-      var res = await fetch(proxyUrl, { signal: controller.signal });
+      var res = await fetch(proxyUrl, { 
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0',
+          'Accept': 'text/html,application/xhtml+xml',
+          'Accept-Language': 'es-PE,es;q=0.9'
+        }
+      });
       clearTimeout(timer);
       if (!res.ok) throw new Error('HTTP ' + res.status);
       var text = await res.text();
@@ -598,11 +692,52 @@ async function fetchWithProxy(url) {
   throw new Error('Todos los proxies fallaron: ' + (lastErr ? lastErr.message : ''));
 }
 
-async function scrapeUrl(url) {
+// ID de la extension MTLKILLERS (se obtiene al instalarla)
+var EXT_ID = localStorage.getItem('mtlkillers_ext_id') || null;
+
+// Verificar si la extension esta instalada
+async function checkExtension(extId) {
+  return new Promise(function(resolve) {
+    try {
+      chrome.runtime.sendMessage(extId, {action:'ping'}, function(resp) {
+        if(chrome.runtime.lastError || !resp) { resolve(false); return; }
+        resolve(resp.success === true);
+      });
+    } catch(e) { resolve(false); }
+  });
+}
+
+// Scrape usando extension (sin proxy, sin bloqueos)
+async function scrapeWithExtension(url) {
+  return new Promise(function(resolve, reject) {
+    chrome.runtime.sendMessage(EXT_ID, {action:'scrape', url:url}, function(resp) {
+      if(chrome.runtime.lastError) { reject(new Error(chrome.runtime.lastError.message)); return; }
+      if(!resp || !resp.success) { reject(new Error(resp ? resp.error : 'Sin respuesta')); return; }
+      resolve(resp.data);
+    });
+  });
+}
+
+// Scrape usando proxy (fallback)
+async function scrapeWithProxy(url) {
   var html = await fetchWithProxy(url);
-  var m = html.match(/<script[^>]+id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
-  if(!m) throw new Error('No se encontro __NEXT_DATA__');
-  return parseProduct(JSON.parse(m[1]));
+  return parseProduct(html, url);
+}
+
+// Scrape principal — usa extension si disponible, sino proxy
+async function scrapeUrl(url) {
+  if(EXT_ID) {
+    try {
+      var ok = await checkExtension(EXT_ID);
+      if(ok) {
+        log('Usando extension MTLKILLERS...', 'info');
+        return await scrapeWithExtension(url);
+      }
+    } catch(e) {
+      log('Extension no disponible, usando proxy...', 'warn');
+    }
+  }
+  return await scrapeWithProxy(url);
 }
 
 // ── ACCIONES ─────────────────────────────────────────────
@@ -851,6 +986,54 @@ varsCode+'\n'+
   log('Descargado: ' + filename, 'ok');
   log(target==='ps' ? 'PS: Archivo > Scripts > Ejecutar script' : 'AI: Archivo > Scripts > Ejecutar script', 'info');
 }
+
+// ── EXTENSION FUNCTIONS ──────────────────────────────────
+function downloadExtension() {
+  // El ZIP de la extension se descarga desde GitHub
+  var a = document.createElement('a');
+  a.href = 'https://viejogxbo.github.io/mtlkillers/MTLKILLERS_EXT.zip';
+  a.download = 'MTLKILLERS_EXT.zip';
+  a.click();
+  log('Descargando extension...', 'info');
+  log('1. Extrae el ZIP', 'info');
+  log('2. Abre chrome://extensions', 'info');
+  log('3. Activa Modo desarrollador', 'info');
+  log('4. Click Cargar descomprimida → selecciona la carpeta', 'info');
+  log('5. Copia el ID que aparece y pégalo arriba', 'info');
+}
+
+function connectExtension() {
+  var id = document.getElementById('extIdInput').value.trim();
+  if(!id) { log('Pega el ID de la extension primero', 'warn'); return; }
+  EXT_ID = id;
+  localStorage.setItem('mtlkillers_ext_id', id);
+  // Verificar conexion
+  checkExtension(id).then(function(ok) {
+    if(ok) {
+      document.getElementById('extBanner').style.display = 'block';
+      document.getElementById('extInstall').style.display = 'none';
+      log('Extension conectada correctamente!', 'ok');
+    } else {
+      log('No se pudo conectar con la extension. Verifica el ID.', 'err');
+    }
+  });
+}
+
+// Verificar extension al cargar
+window.addEventListener('load', function() {
+  var savedId = localStorage.getItem('mtlkillers_ext_id');
+  if(savedId) {
+    EXT_ID = savedId;
+    document.getElementById('extIdInput').value = savedId;
+    checkExtension(savedId).then(function(ok) {
+      if(ok) {
+        document.getElementById('extBanner').style.display = 'block';
+        document.getElementById('extInstall').style.display = 'none';
+        log('Extension MTLKILLERS activa', 'ok');
+      }
+    });
+  }
+});
 
 // ── INIT ─────────────────────────────────────────────────
 addCard();
