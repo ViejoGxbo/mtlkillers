@@ -904,12 +904,18 @@ varsCode+'\n'+
 '    }\n'+
 '    resultLog.push("["+ab.name+"] ["+d.sku+"] OK | "+ok.length+" capas"+(miss.length?" | Sin: "+miss.join(","):""));\n'+
 '  }\n'+
-'  // Exportar una vez por producto\n'+
-'  try {\n'+
-'    var fname = exportDir+"\\\\MTLKILLERS_"+d.sku+"_CARD.jpg";\n'+
-'    var jo = new JPEGSaveOptions(); jo.quality=10; jo.embedColorProfile=true;\n'+
-'    app.activeDocument.saveAs(new File(fname), jo, true, Extension.LOWERCASE);\n'+
-'  } catch(e) { resultLog.push("Export ERROR: "+e.message); }\n'+
+'  // Exportar cada artboard individualmente\n'+
+'  for (var ai2=0; ai2<abs.length; ai2++) {\n'+
+'    var abExp = abs[ai2];\n'+
+'    var abExpName = abExp.name.replace(/\\s+/g,"");\n'+
+'    try {\n'+
+'      app.activeDocument.activeLayer = abExp;\n'+
+'      var fname = exportDir+"\\\\MTLKILLERS_"+abExpName+"_"+d.sku+".jpg";\n'+
+'      var jo = new JPEGSaveOptions(); jo.quality=10; jo.embedColorProfile=true;\n'+
+'      app.activeDocument.saveAs(new File(fname), jo, true, Extension.LOWERCASE);\n'+
+'      resultLog.push("Exportado: "+fname.split("\\\\").pop());\n'+
+'    } catch(e) { resultLog.push("Export ERROR "+abExp.name+": "+e.message); }\n'+
+'  }\n'+
 '}\n\n'+
 'alert("MTLKILLERS PS completado!\\n\\n"+resultLog.join("\\n")+"\\n\\nGuardado en:\\n"+exportDir);\n';
 
@@ -1017,16 +1023,20 @@ varsCode+'\n'+
 '    }\n'+
 '    resultLog.push("["+con.name+"] ["+d.sku+"] OK | "+ok.length+" capas"+(miss.length?" | Sin: "+miss.join(","):""));\n'+
 '  }\n\n'+
-'  // Exportar como JPG\n'+
-'  try {\n'+
-'    var fname  = exportDir + "/MTLKILLERS_" + d.sku + "_CARD.jpg";\n'+
-'    var eo     = new ExportOptionsJPEG();\n'+
-'    eo.qualitySetting = 80;\n'+
-'    eo.antiAliasing   = true;\n'+
-'    eo.resolution     = 150;\n'+
-'    doc.exportFile(new File(fname), ExportType.JPEG, eo);\n'+
-'    resultLog.push("Card #"+(i+1)+" ["+d.sku+"] OK | "+ok.length+"/5"+(miss.length?" | Sin: "+miss.join(","):""));\n'+
-'  } catch(e) { resultLog.push("Card #"+(i+1)+" ERROR: "+e.message); }\n'+
+'  // Exportar cada artboard individualmente\n'+
+'  for (var ai2=0; ai2<cons.length; ai2++) {\n'+
+'    var conExp = cons[ai2];\n'+
+'    var conExpName = conExp.name.replace(/\\s+/g,"");\n'+
+'    try {\n'+
+'      doc.artboards.setActiveArtboardIndex(conExp.artboardIndex || ai2);\n'+
+'      var fname = exportDir+"/MTLKILLERS_"+conExpName+"_"+d.sku+".jpg";\n'+
+'      var eo = new ExportOptionsJPEG();\n'+
+'      eo.qualitySetting = 80; eo.antiAliasing = true; eo.resolution = 150;\n'+
+'      eo.artBoardClipping = true;\n'+
+'      doc.exportFile(new File(fname), ExportType.JPEG, eo);\n'+
+'      resultLog.push("Exportado: MTLKILLERS_"+conExpName+"_"+d.sku+".jpg");\n'+
+'    } catch(e) { resultLog.push("Export ERROR "+conExp.name+": "+e.message); }\n'+
+'  }\n'+
 '}\n\n'+
 'alert("MTLKILLERS AI completado!\\n\\n"+resultLog.join("\\n")+"\\n\\nGuardado en:\\n"+exportDir);\n';
   }
