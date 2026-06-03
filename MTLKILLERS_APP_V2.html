@@ -277,6 +277,7 @@
 
   <!-- ACCIONES -->
   <div class="section">
+    <button class="btn btn-secondary" style="width:100%;margin-bottom:6px" onclick="generateDocAI()">⬡ CREAR DOCUMENTO BASE EN AI</button>
     <button class="btn btn-primary" id="btnFetch" onclick="fetchAll()">
       ⬇ EXTRAER DATOS DE SODIMAC
     </button>
@@ -298,7 +299,7 @@
       <button class="btn btn-green" style="font-size:11px" onclick="generateJsx('ps')">✦ JSX PHOTOSHOP</button>
       <button class="btn btn-green" style="font-size:11px" onclick="generateJsx('ai')">✦ JSX ILLUSTRATOR</button>
     </div>
-    <button class="btn btn-secondary" style="width:100%;margin-bottom:6px" onclick="generateDocAI()">⬡ CREAR DOCUMENTO BASE EN AI</button>
+
     <div class="steps">
       <div class="step"><div class="step-num">1</div><div class="step-text">Descarga el archivo <code>mtlkillers_apply.jsx</code></div></div>
       <div class="step"><div class="step-num">2</div><div class="step-text">Abre tu PSD en Photoshop</div></div>
@@ -1055,9 +1056,8 @@ varsCode+'\n'+
 
 // ── CREAR DOCUMENTO AI ───────────────────────────────────
 function generateDocAI() {
-  var done = cards.filter(function(c){ return c.status==='done' && c.data; });
-  var total = done.length || cards.length;
-  if(total === 0) { log('Agrega al menos una URL primero','warn'); return; }
+  var total = cards.length;
+  if(total === 0) { log('Agrega al menos una card primero','warn'); return; }
 
   var limaNames = [], provNames = [];
   for(var i=1; i<=total; i++) {
