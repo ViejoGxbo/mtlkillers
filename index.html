@@ -931,9 +931,8 @@ varsCode+'\n'+
 'var exportDir = Folder.desktop + "/EXPORT_CARDS";\n'+
 'var exportFolder = new Folder(exportDir);\n'+
 'if (!exportFolder.exists) exportFolder.create();\n\n'+
-'// Buscar text frame por nombre en una capa\n'+
 '// Buscar textFrame por nombre dentro de una capa\n'+
-'function findTextFrameInArtboard(name, layer) {\n'+
+'function findTF(name, layer) {\n'+
 '  try {\n'+
 '    for (var i=0; i<layer.textFrames.length; i++) {\n'+
 '      if (layer.textFrames[i].name === name) return layer.textFrames[i];\n'+
@@ -943,49 +942,30 @@ varsCode+'\n'+
 '}\n\n'+
 
 
-'// Obtener capas contenedoras (sublayers numeradas o todas las capas)\n'+
-'function getContainers(doc) {\n'+
-'  var containers = [];\n'+
-'  // Detectar cualquier nombre con numero al final: Lima 1, Prov 2, Card 3, 1, 2...\n'+
-'  for (var i=0; i<doc.layers.length; i++) {\n'+
-'    var n = doc.layers[i].name;\n'+
-'    if (/\\d+$/.test(n)) containers.push(doc.layers[i]);\n'+
-'  }\n'+
-'  // Ordenar por el numero al final\n'+
-'  containers.sort(function(a,b) {\n'+
-'    var na = parseInt(a.name.match(/\\d+$/)[0]);\n'+
-'    var nb = parseInt(b.name.match(/\\d+$/)[0]);\n'+
-'    return na - nb;\n'+
-'  });\n'+
-'  if (containers.length > 0) return containers;\n'+
-'  containers.push(null);\n'+
-'  return containers;\n'+
-'}\n\n'+
 'var doc;\n'+
 'try { doc = app.activeDocument; }\n'+
 'catch(e) { alert("Abre tu .ai en Illustrator primero."); exit(); }\n\n'+
-'var containers = getContainers(doc);\n'+
-'var resultLog  = [];\n\n'+
-'// Agrupar containers por numero al final\n'+
+'var resultLog = [];\n\n'+
+'// Agrupar CAPAS por numero al final del nombre (LIMA 1, LIMA 2...)\n'+
 'var grouped = {};\n'+
-'for (var i=0; i<containers.length; i++) {\n'+
-'  var nm = containers[i].name;\n'+
+'for (var i=0; i<doc.layers.length; i++) {\n'+
+'  var nm = doc.layers[i].name;\n'+
 '  var numMatch = nm.match(/\\d+$/);\n'+
 '  if (!numMatch) continue;\n'+
 '  var num = parseInt(numMatch[0]);\n'+
 '  if (!grouped[num]) grouped[num] = [];\n'+
-'  grouped[num].push(containers[i]);\n'+
+'  grouped[num].push(doc.layers[i]);\n'+
 '}\n\n'+
 'for (var i=0; i<products.length; i++) {\n'+
-'  var d   = products[i];\n'+
+'  var d = products[i];\n'+
 '  var num = i + 1;\n'+
-'  var cons = grouped[num];\n'+
-'  if (!cons || cons.length === 0) continue;\n'+
-'  for (var ai=0; ai<cons.length; ai++) {\n'+
-'    var con = cons[ai];\n'+
-'    var conName = con.name.toUpperCase();\n'+
-'    var esLima = conName.indexOf("LIMA") >= 0;\n'+
-'    var esProv = conName.indexOf("PROV") >= 0;\n'+
+'  var group = grouped[num];\n'+
+'  if (!group || group.length === 0) { resultLog.push("Card #"+num+": sin artboard"); continue; }\n'+
+'  for (var ai=0; ai<group.length; ai++) {\n'+
+'    var layer = group[ai];\n'+
+'    var layerName = layer.name.toUpperCase();\n'+
+'    var esLima = layerName.indexOf("LIMA") >= 0;\n'+
+'    var esProv = layerName.indexOf("PROV") >= 0;\n'+
 '    var textMaps = [];\n'+
 '    textMaps.push({name:"TXT_DESC", val:d.nombre});\n'+
 '    textMaps.push({name:"TXT_SKU",  val:d.sku});\n'+
@@ -998,55 +978,45 @@ varsCode+'\n'+
 '    var ok=[], miss=[];\n'+
 '    for (var j=0; j<textMaps.length; j++) {\n'+
 '      if (!textMaps[j].val) continue;\n'+
-'      var tf = findTextFrameInArtboard(textMaps[j].name, con);\n'+
+'      var tf = findTF(textMaps[j].name, layer);\n'+
 '      if (tf) { try { tf.contents=String(textMaps[j].val); ok.push(textMaps[j].name); } catch(e){miss.push(textMaps[j].name);}}\n'+
 '      else miss.push(textMaps[j].name);\n'+
 '    }\n'+
-'    // Visibilidad automatica segun tipo de precio\n'+
-'    var hasCmr  = d.precioCmr !== "—" && d.precioCmr !== "";\n'+
+'    // Visibilidad automatica\n'+
+'    var hasCmr   = d.precioCmr !== "—" && d.precioCmr !== "";\n'+
 '    var hasAntes = d.precioAntes !== "—" && d.precioAntes !== "";\n'+
-'    function setVisible(name, visible) {\n'+
-'      try {\n'+
-'        var tf2 = findTextFrameInArtboard(name, con);\n'+
-'        if (tf2) tf2.hidden = !visible;\n'+
-'      } catch(e) {}\n'+
-'      try {\n'+
-'        var pi = doc.pathItems;\n'+
-'        for (var pi2=0; pi2<pi.length; pi2++) {\n'+
-'          if (pi[pi2].name === name) { pi[pi2].hidden = !visible; break; }\n'+
-'        }\n'+
-'      } catch(e) {}\n'+
-'      try {\n'+
-'        var gi = doc.groupItems;\n'+
-'        for (var gi2=0; gi2<gi.length; gi2++) {\n'+
-'          if (gi[gi2].name === name) { gi[gi2].hidden = !visible; break; }\n'+
-'        }\n'+
-'      } catch(e) {}\n'+
+'    function setVis(name, show, lyr) {\n'+
+'      try { var tfs=lyr.textFrames; for(var x=0;x<tfs.length;x++){ if(tfs[x].name===name) tfs[x].hidden=!show; }} catch(e){}\n'+
+'      try { var pi=lyr.pathItems; for(var x=0;x<pi.length;x++){ if(pi[x].name===name) pi[x].hidden=!show; }} catch(e){}\n'+
+'      try { var gi=lyr.groupItems; for(var x=0;x<gi.length;x++){ if(gi[x].name===name) gi[x].hidden=!show; }} catch(e){}\n'+
 '    }\n'+
-'    // CMR vs Regular\n'+
-'    setVisible("BG_PRECIO_CMR",      hasCmr);\n'+
-'    setVisible("GRP_CMR",            hasCmr);\n'+
-'    setVisible("BG_PRECIO_REGULAR",  !hasCmr);\n'+
-'    setVisible("TXT_PRECIO_REGULAR", hasCmr);\n'+
-'    // Precio antes\n'+
-'    setVisible("TXT_PRECIO_ANTES",   hasAntes);\n'+
-'    setVisible("Precio antes: S/",   hasAntes);\n'+
-'    setVisible("Precio regular:",    hasCmr);\n'+
-'    resultLog.push("["+con.name+"] ["+d.sku+"] OK | "+ok.length+" capas"+(miss.length?" | Sin: "+miss.join(","):""));\n'+
+'    setVis("BG_PRECIO_CMR",      hasCmr,   layer);\n'+
+'    setVis("GRP_CMR",            hasCmr,   layer);\n'+
+'    setVis("BG_PRECIO_REGULAR",  !hasCmr,  layer);\n'+
+'    setVis("TXT_PRECIO_REGULAR", hasCmr,   layer);\n'+
+'    setVis("TXT_PRECIO_ANTES",   hasAntes, layer);\n'+
+'    setVis("Precio antes: S/",   hasAntes, layer);\n'+
+'    setVis("Precio regular:",    hasCmr,   layer);\n'+
+'    resultLog.push("["+layer.name+"] ["+d.sku+"] OK | "+ok.length+" capas"+(miss.length?" | Sin: "+miss.join(","):""));\n'+
 '  }\n\n'+
-'  // Exportar cada artboard individualmente\n'+
-'  for (var ai2=0; ai2<cons.length; ai2++) {\n'+
-'    var conExp = cons[ai2];\n'+
-'    var conExpName = conExp.name.replace(/\\s+/g,"");\n'+
+'  // Exportar artboard que coincide con cada capa\n'+
+'  for (var ai2=0; ai2<group.length; ai2++) {\n'+
+'    var lyrExp = group[ai2];\n'+
+'    var expName = lyrExp.name.replace(/\\s+/g,"");\n'+
 '    try {\n'+
-'      doc.artboards.setActiveArtboardIndex(conExp.artboardIndex || ai2);\n'+
-'      var fname = exportDir+"/MTLKILLERS_"+conExpName+"_"+d.sku+".jpg";\n'+
+'      // Buscar artboard con el mismo nombre\n'+
+'      for (var abIdx=0; abIdx<doc.artboards.length; abIdx++) {\n'+
+'        if (doc.artboards[abIdx].name === lyrExp.name) {\n'+
+'          doc.artboards.setActiveArtboardIndex(abIdx); break;\n'+
+'        }\n'+
+'      }\n'+
+'      var fname = exportDir+"/MTLKILLERS_"+expName+"_"+d.sku+".jpg";\n'+
 '      var eo = new ExportOptionsJPEG();\n'+
 '      eo.qualitySetting = 80; eo.antiAliasing = true; eo.resolution = 150;\n'+
 '      eo.artBoardClipping = true;\n'+
 '      doc.exportFile(new File(fname), ExportType.JPEG, eo);\n'+
-'      resultLog.push("Exportado: MTLKILLERS_"+conExpName+"_"+d.sku+".jpg");\n'+
-'    } catch(e) { resultLog.push("Export ERROR "+conExp.name+": "+e.message); }\n'+
+'      resultLog.push("Exportado: MTLKILLERS_"+expName+"_"+d.sku+".jpg");\n'+
+'    } catch(e) { resultLog.push("Export ERROR "+lyrExp.name+": "+e.message); }\n'+
 '  }\n'+
 '}\n\n'+
 'alert("MTLKILLERS AI completado!\\n\\n"+resultLog.join("\\n")+"\\n\\nGuardado en:\\n"+exportDir);\n';
