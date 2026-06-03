@@ -843,11 +843,18 @@ varsCode+'\n'+
 '    try { if (doc.layers[i].isArtboard) containers.push(doc.layers[i]); } catch(e) {}\n'+
 '  }\n'+
 '  if (containers.length > 0) return containers;\n'+
+'  // Detectar cualquier nombre con numero al final: Lima 1, Prov 2...\n'+
+'  var withNum = [];\n'+
 '  for (var i=0; i<doc.layers.length; i++) {\n'+
 '    var n = doc.layers[i].name;\n'+
-'    if (/^\\d+$/.test(n) || /^(card|mesa|artboard)\\s*\\d+$/i.test(n)) containers.push(doc.layers[i]);\n'+
+'    if (/\\d+$/.test(n)) withNum.push(doc.layers[i]);\n'+
 '  }\n'+
-'  if (containers.length > 0) return containers;\n'+
+'  withNum.sort(function(a,b) {\n'+
+'    var na = parseInt(a.name.match(/\\d+$/)[0]);\n'+
+'    var nb = parseInt(b.name.match(/\\d+$/)[0]);\n'+
+'    return na - nb;\n'+
+'  });\n'+
+'  if (withNum.length > 0) return withNum;\n'+
 '  containers.push({name:"doc", layers:doc.layers});\n'+
 '  return containers;\n'+
 '}\n\n'+
@@ -930,12 +937,18 @@ varsCode+'\n'+
 '// Obtener capas contenedoras (sublayers numeradas o todas las capas)\n'+
 'function getContainers(doc) {\n'+
 '  var containers = [];\n'+
+'  // Detectar cualquier nombre con numero al final: Lima 1, Prov 2, Card 3, 1, 2...\n'+
 '  for (var i=0; i<doc.layers.length; i++) {\n'+
 '    var n = doc.layers[i].name;\n'+
-'    if (/^\\d+$/.test(n) || /^(card|mesa)\\s*\\d+$/i.test(n)) containers.push(doc.layers[i]);\n'+
+'    if (/\\d+$/.test(n)) containers.push(doc.layers[i]);\n'+
 '  }\n'+
+'  // Ordenar por el numero al final\n'+
+'  containers.sort(function(a,b) {\n'+
+'    var na = parseInt(a.name.match(/\\d+$/)[0]);\n'+
+'    var nb = parseInt(b.name.match(/\\d+$/)[0]);\n'+
+'    return na - nb;\n'+
+'  });\n'+
 '  if (containers.length > 0) return containers;\n'+
-'  // Una sola card — usar el documento completo\n'+
 '  containers.push(null);\n'+
 '  return containers;\n'+
 '}\n\n'+
