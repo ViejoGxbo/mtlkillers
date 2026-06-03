@@ -432,17 +432,55 @@ function updateSections() {
 function renderPreviews(done) {
   var list = document.getElementById('previewList');
   list.innerHTML = '';
-  done.forEach(function(card) {
+  done.forEach(function(card, idx) {
     var d = card.data;
+    var hasCmr   = d.precioCmr !== '—' && d.precioCmr !== '';
+    var hasAntes = d.precioAntes !== '—' && d.precioAntes !== '';
+    var bgColor  = hasCmr ? '#dc001c' : '#ffd200';
+    var txtColor = hasCmr ? '#fff' : '#000';
+
+    var priceBlock = '';
+    if(hasCmr) {
+      priceBlock =
+        '<div style="background:#dc001c;border-radius:6px;padding:6px 10px;display:inline-flex;align-items:baseline;gap:2px;margin-bottom:4px">' +
+          '<span style="font-size:9px;color:#fff;font-weight:700">S/</span>' +
+          '<span style="font-size:28px;color:#fff;font-weight:900;line-height:1">'+d.precioEntero+'</span>' +
+          '<span style="font-size:11px;color:#fff;font-weight:700;align-self:flex-start;margin-top:2px">'+d.precioDecimal+'</span>' +
+        '</div><br>' +
+        '<span style="font-size:9px;color:var(--dim)">Precio regular: S/ '+d.precioNormal+'</span>' +
+        (hasAntes ? '<br><span style="font-size:9px;color:var(--muted);text-decoration:line-through">Antes: S/ '+d.precioAntes+'</span>' : '');
+    } else {
+      priceBlock =
+        '<div style="background:#ffd200;border-radius:6px;padding:6px 10px;display:inline-flex;align-items:baseline;gap:2px;margin-bottom:4px">' +
+          '<span style="font-size:9px;color:#000;font-weight:700">S/</span>' +
+          '<span style="font-size:28px;color:#000;font-weight:900;line-height:1">'+d.precioEntero+'</span>' +
+          '<span style="font-size:11px;color:#000;font-weight:700;align-self:flex-start;margin-top:2px">'+d.precioDecimal+'</span>' +
+        '</div>' +
+        (hasAntes ? '<br><span style="font-size:9px;color:var(--muted);text-decoration:line-through">Antes: S/ '+d.precioAntes+'</span>' : '');
+    }
+
+    var cmrBadge = hasCmr ?
+      '<div style="background:#333;border-radius:3px;padding:2px 5px;font-size:8px;color:#fff;margin-bottom:4px">CMR + Débito</div>' : '';
+
     var div = document.createElement('div');
-    div.className = 'preview-card';
+    div.style.cssText = 'background:#1a1a1a;border:1px solid #2e2e2e;border-radius:6px;margin-bottom:8px;overflow:hidden';
     div.innerHTML =
-      '<div class="preview-name">'+escHtml(d.nombre)+'</div>' +
-      '<div class="preview-meta">SKU: '+d.sku+' &nbsp;|&nbsp; '+d.marca+' &nbsp;|&nbsp; <span style="color:'+(d.stock==='DISPONIBLE'?'var(--green)':'var(--red)')+'">'+d.stock+'</span></div>' +
-      '<div class="preview-prices">' +
-        '<div class="price-chip pn"><span>Normal: </span>S/'+d.precioNormal+'</div>' +
-        '<div class="price-chip pc"><span>CMR: </span>S/'+d.precioCmr+'</div>' +
-        '<div class="price-chip pd"><span>Desc: </span>'+d.descuento+'</div>' +
+      '<div style="background:#111;padding:6px 10px;display:flex;align-items:center;justify-content:space-between">' +
+        '<span style="font-size:9px;color:var(--accent);font-weight:700">CARD #'+(idx+1)+'</span>' +
+        '<span style="font-size:9px;color:'+(d.stock==='DISPONIBLE'?'var(--green)':'var(--red)')+'">'+d.stock+'</span>' +
+      '</div>' +
+      '<div style="display:flex;gap:0">' +
+        // Left: nombre, sku, marca
+        '<div style="flex:1;padding:10px;border-right:1px solid #2e2e2e">' +
+          '<div style="font-size:9px;color:var(--muted);margin-bottom:2px">'+escHtml(d.marca)+'</div>' +
+          '<div style="font-size:11px;color:var(--text);line-height:1.4;margin-bottom:6px">'+escHtml(d.nombre)+'</div>' +
+          '<div style="font-size:9px;color:var(--muted)">SKU: '+d.sku+'</div>' +
+        '</div>' +
+        // Right: precio
+        '<div style="padding:10px;min-width:130px;display:flex;flex-direction:column;align-items:flex-end">' +
+          cmrBadge +
+          priceBlock +
+        '</div>' +
       '</div>';
     list.appendChild(div);
   });
