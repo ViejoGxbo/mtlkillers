@@ -1059,79 +1059,96 @@ function generateDocAI() {
   var total = cards.length;
   if(total === 0) { log('Agrega al menos una card primero','warn'); return; }
 
-  var limaNames = [], provNames = [];
-  for(var i=1; i<=total; i++) {
-    limaNames.push('LIMA '+i);
-    provNames.push('PROV '+i);
-  }
-  var allNames = limaNames.concat(provNames);
-
-  // Generar JSX para crear el documento en Illustrator
   var jsx = [
 '#target illustrator',
 '// MTLKILLERS V1 — Crear documento base',
 '// Archivo > Scripts > Ejecutar script...',
 '',
-'var W = 1080, H = 1080, GAP = 20, COLS = 5;',
-'var names = ' + JSON.stringify(allNames) + ';',
-'var total = names.length;',
+'var W = 1080, H = 1080, GAP = 20;',
+'var TOTAL = ' + total + ';',
 '',
-'var doc = app.documents.add(DocumentColorSpace.RGB, W, H, 1, DocumentArtboardLayout.GridByCol, GAP, COLS);',
+'var doc = app.documents.add(DocumentColorSpace.RGB, W, H, TOTAL, DocumentArtboardLayout.GridByRow, GAP, TOTAL);',
 'doc.name = "MTLKILLERS_BASE";',
 '',
-'while (doc.artboards.length < total) { doc.artboards.add([0,0,W,-H]); }',
-'while (doc.artboards.length > total) { doc.artboards.remove(doc.artboards.length-1); }',
-'',
-'for (var i=0; i<total; i++) {',
-'  var ab = doc.artboards[i];',
-'  ab.name = names[i];',
-'  var col = i % COLS, row = Math.floor(i / COLS);',
-'  var x0 = col * (W + GAP), y0 = -(row * (H + GAP));',
-'  ab.artboardRect = [x0, y0, x0+W, y0-H];',
+'for (var i=0; i<TOTAL; i++) {',
+'  doc.artboards[i].name = String(i+1);',
+'  doc.artboards[i].artboardRect = [i*(W+GAP), 0, i*(W+GAP)+W, -H];',
 '}',
 '',
-'for (var i=0; i<total; i++) {',
-'  var ab = doc.artboards[i];',
+'function rgb(r,g,b){ var c=new RGBColor(); c.red=r; c.green=g; c.blue=b; return c; }',
+'var WHITE=rgb(255,255,255), DARK=rgb(30,30,30), GRAY=rgb(180,180,180);',
+'var RED=rgb(220,0,28), YELLOW=rgb(255,210,0);',
+'',
+'for (var i=0; i<TOTAL; i++) {',
 '  doc.artboards.setActiveArtboardIndex(i);',
-'  var col = i % COLS, row = Math.floor(i / COLS);',
-'  var x0 = col * (W + GAP), y0 = -(row * (H + GAP));',
-'  var isLima = names[i].indexOf("LIMA") >= 0;',
-'  var white = (function(){ var c=new RGBColor(); c.red=255; c.green=255; c.blue=255; return c; })();',
-'  var gray  = (function(){ var c=new RGBColor(); c.red=200; c.green=200; c.blue=200; return c; })();',
-'  var dark  = (function(){ var c=new RGBColor(); c.red=40;  c.green=40;  c.blue=40;  return c; })();',
-'  var red   = (function(){ var c=new RGBColor(); c.red=220; c.green=0;   c.blue=28;  return c; })();',
-'  var yell  = (function(){ var c=new RGBColor(); c.red=255; c.green=200; c.blue=0;   return c; })();',
-'  var bg = doc.pathItems.rectangle(y0, x0, W, H);',
-'  bg.filled=true; bg.fillColor=dark; bg.stroked=false; bg.name="BG_CARD";',
-'  var tf;',
-'  tf=doc.textFrames.add(); tf.contents="Nombre del producto"; tf.name="TXT_DESC";',
-'  tf.position=[x0+40, y0-600]; tf.textRange.characterAttributes.size=28; tf.textRange.characterAttributes.fillColor=white;',
-'  tf=doc.textFrames.add(); tf.contents="SKU: 0000000"; tf.name="TXT_SKU";',
-'  tf.position=[x0+40, y0-700]; tf.textRange.characterAttributes.size=18; tf.textRange.characterAttributes.fillColor=gray;',
-'  if (isLima) {',
-'    var bgCmr=doc.pathItems.rectangle(y0-750, x0+600, 380, 120);',
-'    bgCmr.filled=true; bgCmr.fillColor=red; bgCmr.stroked=false; bgCmr.name="BG_PRECIO_CMR";',
-'    var bgReg=doc.pathItems.rectangle(y0-750, x0+600, 380, 120);',
-'    bgReg.filled=true; bgReg.fillColor=yell; bgReg.stroked=false; bgReg.name="BG_PRECIO_REGULAR"; bgReg.hidden=true;',
-'    tf=doc.textFrames.add(); tf.contents="000"; tf.name="TXT_PRECIO";',
-'    tf.position=[x0+620, y0-760]; tf.textRange.characterAttributes.size=72; tf.textRange.characterAttributes.fillColor=white;',
-'    tf=doc.textFrames.add(); tf.contents=".00"; tf.name="TXT_DECIMAL";',
-'    tf.position=[x0+820, y0-770]; tf.textRange.characterAttributes.size=36; tf.textRange.characterAttributes.fillColor=white;',
-'    tf=doc.textFrames.add(); tf.contents="Precio regular: S/ 000.00"; tf.name="TXT_PRECIO_REGULAR";',
-'    tf.position=[x0+600, y0-880]; tf.textRange.characterAttributes.size=16; tf.textRange.characterAttributes.fillColor=gray;',
-'    tf=doc.textFrames.add(); tf.contents="Antes: S/ 000.00"; tf.name="TXT_PRECIO_ANTES";',
-'    tf.position=[x0+600, y0-910]; tf.textRange.characterAttributes.size=14; tf.textRange.characterAttributes.fillColor=gray;',
-'  }',
+'  var x0 = i*(W+GAP);',
+'',
+'  var bg=doc.pathItems.rectangle(0,x0,W,H);',
+'  bg.filled=true; bg.fillColor=DARK; bg.stroked=false; bg.name="BG_CARD";',
+'',
+'  var tfDesc=doc.textFrames.add();',
+'  tfDesc.name="TXT_DESC"; tfDesc.contents="Nombre del producto";',
+'  tfDesc.position=[x0+216,-(935)];',
+'  tfDesc.textRange.characterAttributes.size=31;',
+'  try{tfDesc.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Regular");}catch(e){}',
+'  tfDesc.textRange.characterAttributes.fillColor=WHITE;',
+'',
+'  var tfSku=doc.textFrames.add();',
+'  tfSku.name="TXT_SKU"; tfSku.contents="SKU: 0000000";',
+'  tfSku.position=[x0+290,-(1036)];',
+'  tfSku.textRange.characterAttributes.size=22;',
+'  try{tfSku.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Regular");}catch(e){}',
+'  tfSku.textRange.characterAttributes.fillColor=GRAY;',
+'',
+'  var bgCmr=doc.pathItems.roundedRectangle(-(892),x0+824,281,107,10,10);',
+'  bgCmr.name="BG_PRECIO_CMR"; bgCmr.filled=true; bgCmr.fillColor=RED; bgCmr.stroked=false;',
+'',
+'  var bgReg=doc.pathItems.roundedRectangle(-(892),x0+824,281,107,10,10);',
+'  bgReg.name="BG_PRECIO_REGULAR"; bgReg.filled=true; bgReg.fillColor=YELLOW; bgReg.stroked=false; bgReg.hidden=true;',
+'',
+'  var tfP=doc.textFrames.add();',
+'  tfP.name="TXT_PRECIO"; tfP.contents="000";',
+'  tfP.position=[x0+835,-(809)];',
+'  tfP.textRange.characterAttributes.size=76;',
+'  try{tfP.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Bold");}catch(e){}',
+'  tfP.textRange.characterAttributes.fillColor=WHITE;',
+'',
+'  var tfD=doc.textFrames.add();',
+'  tfD.name="TXT_DECIMAL"; tfD.contents=".00";',
+'  tfD.position=[x0+836,-(967)];',
+'  tfD.textRange.characterAttributes.size=23;',
+'  try{tfD.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Bold");}catch(e){}',
+'  tfD.textRange.characterAttributes.fillColor=WHITE;',
+'',
+'  var tfR=doc.textFrames.add();',
+'  tfR.name="TXT_PRECIO_REGULAR"; tfR.contents="Precio regular: S/ 000.00";',
+'  tfR.position=[x0+797,-(1022)];',
+'  tfR.textRange.characterAttributes.size=22;',
+'  try{tfR.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Light");}catch(e){}',
+'  tfR.textRange.characterAttributes.fillColor=GRAY;',
+'',
+'  var tfA=doc.textFrames.add();',
+'  tfA.name="TXT_PRECIO_ANTES"; tfA.contents="Precio antes: S/ 000.00";',
+'  tfA.position=[x0+797,-(1050)];',
+'  tfA.textRange.characterAttributes.size=22;',
+'  try{tfA.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Light");}catch(e){}',
+'  tfA.textRange.characterAttributes.fillColor=GRAY;',
+'  tfA.textRange.characterAttributes.strikeThrough=true;',
+'',
+'  var pCmr=doc.pathItems.rectangle(-(884),x0+649,54,121);',
+'  pCmr.name="GRP_CMR"; pCmr.filled=true; pCmr.fillColor=rgb(100,100,100); pCmr.stroked=false;',
 '}',
-'alert("Documento MTLKILLERS creado! " + total + " mesas de trabajo.");'
-].join('\n')
+'',
+'alert("MTLKILLERS creado! ' + total + ' mesas de trabajo listas.");'
+  ].join('\n');
+
   var blob = new Blob([jsx], {type:'text/plain'});
   var url  = URL.createObjectURL(blob);
   var a    = document.createElement('a');
   a.href = url; a.download = 'MTLKILLERS_crear_documento.jsx'; a.click();
   URL.revokeObjectURL(url);
-  log('Descargado: MTLKILLERS_crear_documento.jsx ('+total+' URLs = '+limaNames.length+' Lima + '+provNames.length+' Prov)', 'ok');
-  log('Corre el JSX en Illustrator: Archivo > Scripts > Ejecutar script', 'info');
+  log('Descargado: MTLKILLERS_crear_documento.jsx (' + total + ' cards)', 'ok');
+  log('En Illustrator: Archivo > Scripts > Ejecutar script', 'info');
 }
 
 // ── EXTENSION FUNCTIONS ──────────────────────────────────
