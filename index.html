@@ -491,6 +491,116 @@ function clearAll() {
 // ── SCRAPER ──────────────────────────────────────────────
 // ── PARSER (lógica basada en Google Sheets RETAIL PRO) ──────
 
+// ── CORRECCIÓN DE TILDES ─────────────────────────────────
+var TILDES = {
+  // Verbos y adjetivos comunes
+  'electrica':'eléctrica','electricas':'eléctricas','electrico':'eléctrico','electricos':'eléctricos',
+  'neumatica':'neumática','neumaticas':'neumáticas','neumatico':'neumático','neumaticos':'neumáticos',
+  'hidraulica':'hidráulica','hidraulico':'hidráulico',
+  'automatica':'automática','automatico':'automático','automaticas':'automáticas','automaticos':'automáticos',
+  'ceramica':'cerámica','ceramicas':'cerámicas','ceramico':'cerámico',
+  'metalica':'metálica','metalico':'metálico','metalicas':'metálicas','metalicos':'metálicos',
+  'plastica':'plástica','plastico':'plástico','plasticas':'plásticas','plasticos':'plásticos',
+  'magnetica':'magnética','magnetico':'magnético',
+  'mecanica':'mecánica','mecanico':'mecánico',
+  'organica':'orgánica','organico':'orgánico',
+  'acustica':'acústica','acustico':'acústico',
+  'optica':'óptica','optico':'óptico',
+  'basica':'básica','basico':'básico','basicas':'básicas','basicos':'básicos',
+  'unica':'única','unico':'único','unicas':'únicas','unicos':'únicos',
+  'publica':'pública','publico':'público',
+  'tecnica':'técnica','tecnico':'técnico','tecnicas':'técnicas','tecnicos':'técnicos',
+  // Sustantivos comunes en productos
+  'bateria':'batería','baterias':'baterías',
+  'taladro':'taladro',
+  'atornillador':'atornillador',
+  'percutor':'percutor',
+  'compresor':'compresor',
+  'aspiradora':'aspiradora',
+  'lavadora':'lavadora',
+  'heladera':'heladera',
+  'refrigerador':'refrigerador',
+  'calefaccion':'calefacción',
+  'calefactor':'calefactor',
+  'ventilacion':'ventilación',
+  'extension':'extensión','extensiones':'extensiones',
+  'instalacion':'instalación','instalaciones':'instalaciones',
+  'iluminacion':'iluminación',
+  'proteccion':'protección',
+  'conexion':'conexión','conexiones':'conexiones',
+  'solucion':'solución','soluciones':'soluciones',
+  'aplicacion':'aplicación','aplicaciones':'aplicaciones',
+  'funcion':'función','funciones':'funciones',
+  'estacion':'estación','estaciones':'estaciones',
+  'dimension':'dimensión','dimensiones':'dimensiones',
+  'adhesion':'adhesión',
+  'fijacion':'fijación',
+  'nivelacion':'nivelación',
+  'inyeccion':'inyección',
+  'impresion':'impresión',
+  'corrosion':'corrosión',
+  'erosion':'erosión',
+  'expulsion':'expulsión',
+  'presion':'presión',
+  'ersion':'ersión',
+  // Medidas y materiales
+  'angulo':'ángulo','angulos':'ángulos',
+  'solido':'sólido','solida':'sólida',
+  'liquido':'líquido','liquida':'líquida',
+  'acido':'ácido','acidos':'ácidos',
+  'oxido':'óxido',
+  'recipiente':'recipiente',
+  'indice':'índice',
+  // Colores y acabados
+  'marron':'marrón',
+  'salmon':'salmón',
+  'crema':'crema',
+  // Palabras de acción
+  'rapido':'rápido','rapida':'rápida','rapidos':'rápidos','rapidas':'rápidas',
+  'facil':'fácil','faciles':'fáciles',
+  'util':'útil','utiles':'útiles',
+  'fragil':'frágil','fragiles':'frágiles',
+  'agil':'ágil',
+  'movil':'móvil','moviles':'móviles',
+  'debil':'débil','debiles':'débiles',
+  'habil':'hábil','habiles':'hábiles',
+  'fertil':'fértil',
+  'versatil':'versátil',
+  // Números y medidas escritas
+  'metros':'metros','centimetros':'centímetros','milimetros':'milímetros',
+  'litros':'litros','kilogramos':'kilogramos',
+  // Extras ferretería
+  'angulo':'ángulo',
+  'ladrillo':'ladrillo',
+  'cemento':'cemento',
+  'hormigon':'hormigón',
+  'espatula':'espátula','espatulas':'espátulas',
+  'espuma':'espuma',
+  'silicon':'silicón','silicona':'silicona',
+  'poliuretano':'poliuretano',
+  'impermeabilizacion':'impermeabilización',
+  'multiproposito':'multipropósito',
+  'ergonomico':'ergonómico','ergonomica':'ergonómica',
+  'termico':'térmico','termica':'térmica',
+  'acustico':'acústico',
+  'antipatic':'antideslizante',
+  'inalambrico':'inalámbrico','inalambrica':'inalámbrica',
+  'portatil':'portátil','portatiles':'portátiles'
+};
+
+function corregirTildes(texto) {
+  if(!texto) return texto;
+  return texto.replace(/\b[a-záéíóúüñA-ZÁÉÍÓÚÜÑ]+\b/g, function(word) {
+    var lower = word.toLowerCase();
+    var corrected = TILDES[lower];
+    if(!corrected) return word;
+    // Respetar mayúsculas
+    if(word === word.toUpperCase()) return corrected.toUpperCase();
+    if(word[0] === word[0].toUpperCase()) return corrected.charAt(0).toUpperCase() + corrected.slice(1);
+    return corrected;
+  });
+}
+
 function nombreValido(t) {
   if(!t || typeof t !== 'string') return false;
   var tl = t.toLowerCase();
@@ -499,9 +609,10 @@ function nombreValido(t) {
 }
 
 function splitPrice(fmt) {
-  if(!fmt) return {entero:'0', decimal:'00'};
+  if(!fmt) return {entero:'0', decimal:'.00'};
   var parts = String(fmt).replace(/[S\/\s]/g,'').split(',');
-  return {entero: parts[0], decimal: parts[1]||'00'};
+  var dec = parts[1] || '00';
+  return {entero: parts[0], decimal: '.' + dec};
 }
 
 function parseProduct(html, url) {
@@ -537,6 +648,9 @@ function parseProduct(html, url) {
     try { slug = url.split('/articulo/')[1].split('/')[1] || ''; } catch(e){}
     nombre = slug.replace(/-/g,' ').replace(/\b\w/g, function(x){ return x.toUpperCase(); }) || 'Producto';
   }
+
+  // Corregir tildes
+  nombre = corregirTildes(nombre);
 
   // ── SKU — Cód. tienda directo del HTML ───────────────────
   var skuMatch = html.match(/Cód\.\s*tienda[:\s]*([\d]+)/i);
@@ -625,9 +739,9 @@ function parseProduct(html, url) {
   var precioEntero  = partes[0];
   var precioDecimal = partes[1] || '00';
 
-  var precioNormalStr = precioRegular ? precioRegular.toFixed(2).replace('.', ',') : '—';
-  var precioCmrStr    = precioCMR    ? precioCMR.toFixed(2).replace('.', ',')    : '—';
-  var precioAntesStr  = precioAntes  ? precioAntes.toFixed(2).replace('.', ',')  : '—';
+  var precioNormalStr = precioRegular ? precioRegular.toFixed(2) : '—';
+  var precioCmrStr    = precioCMR    ? precioCMR.toFixed(2)    : '—';
+  var precioAntesStr  = precioAntes  ? precioAntes.toFixed(2)  : '—';
 
   // ── STOCK ────────────────────────────────────────────────
   var stock = 'DESCONOCIDO';
