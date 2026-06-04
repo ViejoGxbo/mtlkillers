@@ -300,6 +300,10 @@ function updateSections(){
 // ── PREVIEW ──────────────────────────────────────────────
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
+function openUrl(idx){
+  var done=cards.filter(function(c){return c.status==='done'&&c.data});
+  if(done[idx]&&done[idx].url) window.open(done[idx].url,'_blank');
+}
 function renderPreviews(done){
   var list=document.getElementById('previewList');
   list.innerHTML='';
@@ -331,7 +335,7 @@ function renderPreviews(done){
           '<div class="preview-nombre">'+esc(d.nombre)+'</div>'+
           '<div class="preview-sku">SKU: <span>'+esc(d.sku)+'</span></div>'+
           '<div class="preview-actions">'+
-            (cardUrl?'<button class="btn-url" onclick="window.open(''+cardUrl+'','_blank')">↗ Ver en Sodimac</button>':'')+''+
+            (cardUrl?'<button class="btn-url" onclick="openUrl('+i+')">↗ Ver en Sodimac</button>':'')+''+
           '</div>'+
         '</div>'+
         '<div class="preview-right">'+pBlock+'</div>'+
