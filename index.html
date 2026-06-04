@@ -409,6 +409,11 @@ body{
   border-radius:3px;
   padding:16px;
   margin-bottom:20px;
+  transition:border-color 0.3s,background 0.3s;
+}
+.ext-wizard.connected{
+  background:rgba(61,220,132,0.05);
+  border-color:rgba(61,220,132,0.3);
 }
 .ext-wizard-title{
   font-size:9px;
@@ -1042,8 +1047,11 @@ function connectExtension(){
       document.getElementById('extDot').classList.add('active');
       document.getElementById('extLabel').textContent='Extension activa';
       document.getElementById('extLabel').style.color='var(--green)';
+      document.querySelector('.ext-wizard').classList.add('connected');
+      document.querySelector('.ext-wizard-title').textContent='Extension conectada - Sin proxies, sin bloqueos';
+      document.querySelector('.ext-wizard-title').style.color='var(--green)';
       log('Extension conectada','ok');
-    }else{log('No se pudo conectar — verifica el ID','err')}
+    }else{log('No se pudo conectar - verifica el ID','err')}
   });
 }
 
@@ -1058,6 +1066,9 @@ window.addEventListener('load',function(){
         document.getElementById('extDot').classList.add('active');
         document.getElementById('extLabel').textContent='Extension activa';
         document.getElementById('extLabel').style.color='var(--green)';
+        document.querySelector('.ext-wizard').classList.add('connected');
+        document.querySelector('.ext-wizard-title').textContent='Extension conectada - Sin proxies, sin bloqueos';
+        document.querySelector('.ext-wizard-title').style.color='var(--green)';
         log('Extension MTLKILLERS activa','ok');
       }
     });
