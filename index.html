@@ -811,6 +811,9 @@ function parseProduct(html,url){
 
   // ── PRECIOS desde __NEXT_DATA__ ──
   var precioCMR=null,precioRegular=null,precioAntes=null;
+  // Verificar si Sodimac muestra el CMR visualmente (shade-red-text en el HTML)
+  var cmrVisible = html.includes('shade-red-text');
+
   try{
     var v0=data.props.pageProps.productData.variants[0];
     var prices=v0.prices||[];
@@ -818,13 +821,14 @@ function parseProduct(html,url){
       var num=getNum(p.price);
       if(!num)return;
       var t=(p.type||'').toLowerCase();
-      if(t==='cmrprice'||t==='offerprice'||t==='cardprice'){if(!precioCMR)precioCMR=num;}
+      if(t==='cmrprice'||t==='offerprice'||t==='cardprice'){
+        // Solo usar CMR si Sodimac lo muestra visualmente en rojo
+        if(!precioCMR && cmrVisible) precioCMR=num;
+        else if(!precioRegular && !cmrVisible) precioRegular=num;
+      }
       else if(t==='normalprice'||t==='regularprice'||t==='internetprice'||t==='eventprice'){if(!precioRegular)precioRegular=num;}
       else if(t==='crossed'||p.crossed===true){if(!precioAntes)precioAntes=num;}
     });
-    // Si hay CMR + regular → regular se muestra como "precio regular" debajo del CMR
-    // Solo si hay un tercer precio (crossed) se muestra como "antes"
-    // No transformar regular en antes — son campos distintos
   }catch(e){
     // Fallback CSS classes
     var rxC=html.match(/shade-red-text[^>]*price-value[^>]*>([\d.,]+)|price-value[^>]*shade-red-text[^>]*>([\d.,]+)/i);
