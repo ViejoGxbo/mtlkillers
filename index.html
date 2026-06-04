@@ -759,17 +759,14 @@ function renderPreviews(done){
     var hasCmr=d.precioCmr!='--'&&d.precioCmr!='';
     var hasAntes=d.precioAntes!='--'&&d.precioAntes!='';
     var pBlock='';
-    var m2label=d.esM2?'<div style="font-size:8px;color:var(--sub);letter-spacing:1px;text-align:right">por m²</div>':'';
-    var cajalabel=d.esM2?'<div style="font-size:8px;color:var(--muted);text-align:right">precio caja distinto</div>':'';
+    var decLabel=d.esM2?d.precioDecimal+'<span style="font-size:8px;margin-left:2px">m²</span>':d.precioDecimal;
     if(hasCmr){
       pBlock='<div class="cmr-chip">CMR + Debito</div>'+
-        '<div class="price-badge cmr"><span class="ps">S/</span><span class="pe">'+d.precioEntero+'</span><span class="pd">'+d.precioDecimal+'</span></div>'+
-        m2label+
-        '<div class="price-reg">Regular: S/ '+d.precioNormal+'</div>'+
+        '<div class="price-badge cmr"><span class="ps">S/</span><span class="pe">'+d.precioEntero+'</span><span class="pd">'+decLabel+'</span></div>'+
+        '<div class="price-reg">Regular: S/ '+d.precioNormal+(d.esM2?' m²':'')+'</div>'+
         (hasAntes?'<div class="price-antes">Antes: S/ '+d.precioAntes+'</div>':'');
     }else{
-      pBlock='<div class="price-badge reg"><span class="ps">S/</span><span class="pe">'+d.precioEntero+'</span><span class="pd">'+d.precioDecimal+'</span></div>'+
-        m2label+
+      pBlock='<div class="price-badge reg"><span class="ps">S/</span><span class="pe">'+d.precioEntero+'</span><span class="pd">'+decLabel+'</span></div>'+
         (hasAntes?'<div class="price-antes">Antes: S/ '+d.precioAntes+'</div>':'');
     }
     var div=document.createElement('div');
@@ -878,11 +875,26 @@ function parseProduct(html,url){
     });
     if(pCMR&&pReg&&pCMR===pReg)pReg=null;
   }catch(e){}
-  var esM2=nombre.toLowerCase().includes('m2');
+  var esM2=nombre.toLowerCase().includes('m2')||nombre.toLowerCase().includes('m²');
   if(esM2){
-    var m2P=[];var rxM=new RegExp('m2-price-value[^>]*>([0-9.,]+)','gi');var mM;
-    while((mM=rxM.exec(html))!==null){var n2=parseFloat(mM[1].replace(',','.'));if(!isNaN(n2)&&n2>1)m2P.push(n2)}
-    if(m2P.length){m2P.sort(function(a,b){return a-b});if(m2P.length>=2){pCMR=m2P[0];pReg=m2P[1];pAntes=null;}else{pReg=m2P[0];pCMR=null;}}
+    var m2P=[];
+    // Intentar leer precios m2 pasados por la extension
+    var m2El=html.match(/id="m2prices" data-prices="([^"]+)"/);
+    if(m2El){
+      m2El[1].split(',').forEach(function(v){
+        var n=parseFloat(v);if(!isNaN(n)&&n>0)m2P.push(n);
+      });
+    }
+    // Fallback: regex en HTML
+    if(!m2P.length){
+      var rxM=new RegExp('m2-price-value[^>]*>([0-9.,]+)','gi');var mM;
+      while((mM=rxM.exec(html))!==null){var n2=parseFloat(mM[1].replace(',','.'));if(!isNaN(n2)&&n2>1)m2P.push(n2)}
+    }
+    if(m2P.length){
+      m2P.sort(function(a,b){return a-b});
+      if(m2P.length>=2){pCMR=m2P[0];pReg=m2P[1];pAntes=null;}
+      else{pReg=m2P[0];pCMR=null;}
+    }
   }
   if(pAntes&&pAntes===pReg)pAntes=null;if(pAntes&&pAntes===pCMR)pAntes=null;
   var desc='--';
@@ -922,9 +934,9 @@ async function scrapeWithExt(url){
       if(chrome.runtime.lastError)return reject(new Error(chrome.runtime.lastError.message));
       if(!r||!r.success)return reject(new Error(r?r.error:'Sin respuesta'));
       try{
-        // Incluir señal de cmrVisible en el fake HTML
         var cmrClass=r.cmrVisible?'<div class="shade-red-text"></div>':'';
-        var fk=cmrClass+'<sc'+'ript id="__NEXT_DATA__">'+r.nextData+'</'+'script>';
+        var m2Tag=r.m2Prices&&r.m2Prices.length?'<div id="m2prices" data-prices="'+r.m2Prices.join(',')+'"></div>':'';
+        var fk=cmrClass+m2Tag+'<sc'+'ript id="__NEXT_DATA__">'+r.nextData+'</'+'script>';
         resolve(parseProduct(fk,url));
       }catch(e){reject(e)}
     });
