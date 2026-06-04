@@ -822,10 +822,9 @@ function parseProduct(html,url){
       else if(t==='normalprice'||t==='regularprice'||t==='internetprice'||t==='eventprice'){if(!precioRegular)precioRegular=num;}
       else if(t==='crossed'||p.crossed===true){if(!precioAntes)precioAntes=num;}
     });
-    // Si CMR y regular existen pero regular > CMR → regular es precioAntes
-    if(precioCMR&&precioRegular&&!precioAntes&&precioRegular>precioCMR){
-      precioAntes=precioRegular;precioRegular=null;
-    }
+    // Si hay CMR + regular → regular se muestra como "precio regular" debajo del CMR
+    // Solo si hay un tercer precio (crossed) se muestra como "antes"
+    // No transformar regular en antes — son campos distintos
   }catch(e){
     // Fallback CSS classes
     var rxC=html.match(/shade-red-text[^>]*price-value[^>]*>([\d.,]+)|price-value[^>]*shade-red-text[^>]*>([\d.,]+)/i);
