@@ -717,49 +717,59 @@ function parseProduct(html, url) {
   }
   if(!sku) sku = '—';
 
-  // ── PRECIOS ──────────────────────────────────────────────
-  var precios = [];
-
-  function capturarPrecio(obj, depth) {
-    if(!obj || typeof obj !== 'object' || depth > 10) return;
-    for(var k in obj) {
-      var v = obj[k];
-      if(k==='price'||k==='currentPrice'||k==='internetPrice'||k==='sellingPrice'||
-         k==='normalPrice'||k==='regularPrice'||k==='cmrPrice'||k==='offerPrice') {
-        var num = parseFloat(String(v).replace(/[^0-9.]/g,''));
-        if(!isNaN(num) && num > 1 && num < 500000) {
-          var raw = JSON.stringify(obj).toUpperCase();
-          var isCmr = raw.includes('CMR') || k==='cmrPrice' || k==='offerPrice';
-          // Evitar duplicados
-          var exists = precios.some(function(p){ return p.valor === num; });
-          if(!exists) precios.push({valor: num, cmr: isCmr});
-        }
-      }
-      capturarPrecio(v, depth+1);
-    }
-  }
-  capturarPrecio(data, 0);
-  precios.sort(function(a,b){ return a.valor - b.valor; });
-
-  // ── CLASIFICAR PRECIOS ───────────────────────────────────
+  // ── PRECIOS (lógica Google Sheets RETAIL PRO) ───────────
   var precioCMR = null, precioRegular = null, precioAntes = null;
 
+  // Capturar todos los precios del HTML con su contexto
+  var precios = [];
+  var rxPrecios = /S\/\s*([\d.,]+)/gi;
+  var mPrecio;
+  while((mPrecio = rxPrecios.exec(html)) !== null) {
+    var num = parseFloat(mPrecio[1].replace(',', '.'));
+    if(isNaN(num) || num < 1 || num > 500000) continue;
+    var bloque = html.substring(Math.max(0, mPrecio.index - 200), mPrecio.index + 200).toUpperCase();
+    // Ignorar precios en contextos no relevantes
+    var esBasura = bloque.includes('AHORRA') ||
+                   bloque.includes('CUPON') ||
+                   bloque.includes('CUPON') ||
+                   bloque.includes('BENEFICIO') ||
+                   bloque.includes('TARJETA DE REGALO') ||
+                   bloque.includes('DESPACHO') ||
+                   bloque.includes('ENVIO');
+    if(esBasura) continue;
+    var esCmr = bloque.includes('CMR') ||
+                bloque.includes('DEBITO FALABELLA') ||
+                bloque.includes('CARDPRICE') ||
+                bloque.includes('"CMRPRICE"') ||
+                bloque.includes('"OFFERPRICE"');
+    // Deduplicar
+    var existe = precios.some(function(p){ return p.valor === num; });
+    if(!existe) precios.push({valor: num, cmr: esCmr});
+  }
+
+  precios.sort(function(a,b){ return a.valor - b.valor; });
+
+  // Clasificar igual que en Google Sheets
   if(precios.length === 1) {
     precioRegular = precios[0].valor;
   } else if(precios.length === 2) {
     var tieneCMR = precios.some(function(x){ return x.cmr; });
     if(tieneCMR) {
-      precioCMR    = precios[0].valor;
-      precioRegular = precios[1].valor;
+      precioCMR     = precios[0].valor; // menor = CMR
+      precioRegular = precios[1].valor; // mayor = regular
     } else {
-      precioRegular = precios[0].valor;
-      precioAntes   = precios[1].valor;
+      precioRegular = precios[0].valor; // menor = regular
+      precioAntes   = precios[1].valor; // mayor = antes
     }
   } else if(precios.length >= 3) {
     precioCMR     = precios[0].valor;
     precioRegular = precios[1].valor;
     precioAntes   = precios[precios.length-1].valor;
   }
+
+  // Limpiar casos donde los precios son iguales
+  if(precioAntes && precioAntes === precioRegular) precioAntes = null;
+  if(precioRegular && precioRegular === precioCMR) precioRegular = null;
 
   // ── PRECIO M2 ────────────────────────────────────────────
   var esM2 = nombre.toLowerCase().includes('m2') || nombre.toLowerCase().includes('m²');
