@@ -848,8 +848,7 @@ function parseProduct(html,url){
   buscar(data,0);
   if(!nombre){var sl='';try{sl=url.split('/articulo/')[1].split('/')[1]||''}catch(e){}nombre=sl.replace(/-/g,' ').replace(/\b\w/g,function(x){return x.toUpperCase()})||'Producto'}
   nombre=fixAccents(nombre);
-  var skuM=html.match(/C\u00f3d\.\s*tienda[:\s]*([\w]+)/i);
-  var sku=skuM?skuM[1]:'';
+  var skuM=html.match(/[Cc].d\. *tienda[:\s]*([\w]+)/i);var sku=skuM?skuM[1]:'';
   if(!sku){var iM=html.match(/sodimacPE\/([0-9]+)[_\/]/i);if(iM)sku=iM[1]}
   if(!sku)sku='--';
   var pCMR=null,pReg=null,pAntes=null;
@@ -1036,38 +1035,44 @@ function generateDocAI(target){
 
   var psJsx = [
     '#target photoshop',
-    '// MTLKILLERS V1 - Crear documento base PS',
+    '// MTLKILLERS V1 - Base Photoshop',
     'var W=1080,H=1080;',
-    'var opts = new DocumentCreationOptions();',
-    'opts.width = new UnitValue(W, "px");',
-    'opts.height = new UnitValue(H, "px");',
-    'opts.resolution = 72;',
-    'opts.mode = NewDocumentMode.RGB;',
-    'var doc = app.documents.add(opts);',
-    'doc.name = "MTLKILLERS_BASE";',
+    'var opts=new DocumentCreationOptions();',
+    'opts.width=new UnitValue(W,"px");',
+    'opts.height=new UnitValue(H,"px");',
+    'opts.resolution=72;',
+    'opts.mode=NewDocumentMode.RGB;',
+    'var doc=app.documents.add(opts);',
+    'doc.name="MTLKILLERS_BASE";',
     'function rgb(r,g,b){var c=new SolidColor();c.rgb.red=r;c.rgb.green=g;c.rgb.blue=b;return c;}',
     'var WHITE=rgb(255,255,255),DARK=rgb(30,30,30),GRAY=rgb(180,180,180),RED=rgb(220,0,28),YELLOW=rgb(255,210,0);',
-    'var lyr=doc.layers[0];lyr.name="LIMA 1";',
-    'function addText(name,txt,x,y,size,color){',
+    'function addTxt(name,txt,x,y,size,color){',
     '  var l=doc.artLayers.add();l.kind=LayerKind.TEXT;l.name=name;',
-    '  var t=l.textItem;t.contents=txt;t.position=[new UnitValue(x,"px"),new UnitValue(y,"px")];',
+    '  var t=l.textItem;t.contents=txt;',
+    '  t.position=[new UnitValue(x,"px"),new UnitValue(y,"px")];',
     '  t.size=new UnitValue(size,"pt");t.color=color;',
     '}',
-    'addText("TXT_DESC","Nombre del producto",216,935,31,WHITE);',
-    'addText("TXT_SKU","SKU: 0000000",290,1036,22,GRAY);',
-    'addText("TXT_PRECIO","000",835,809,76,WHITE);',
-    'addText("TXT_DECIMAL",".00",836,967,23,WHITE);',
-    'addText("TXT_PRECIO_REGULAR","Precio regular: S/ 000.00",797,1022,22,GRAY);',
-    'addText("TXT_PRECIO_ANTES","Precio antes: S/ 000.00",797,1050,22,GRAY);',
+    'var bg=doc.artLayers.add();',
+    'bg.name="BG_CARD";',
+    'doc.selection.selectAll();',
+    'doc.selection.fill(DARK);',
+    'doc.selection.deselect();',
+    'addTxt("TXT_DESC","Nombre del producto",216,935,31,WHITE);',
+    'addTxt("TXT_SKU","SKU: 0000000",290,1036,22,GRAY);',
+    'addTxt("TXT_PRECIO","000",835,809,76,WHITE);',
+    'addTxt("TXT_DECIMAL",".00",836,967,23,WHITE);',
+    'addTxt("TXT_PRECIO_REGULAR","Precio regular: S/ 000.00",797,1022,22,GRAY);',
+    'addTxt("TXT_PRECIO_ANTES","Precio antes: S/ 000.00",797,1050,22,GRAY);',
     'function addRect(name,x,y,w,h,color){',
     '  doc.selection.select([[x,y],[x+w,y],[x+w,y+h],[x,y+h]]);',
-    '  doc.selection.fill(color);doc.selection.deselect();',
-    '  doc.activeLayer.name=name;',
+    '  var l=doc.artLayers.add();l.name=name;',
+    '  doc.selection.fill(color);',
+    '  doc.selection.deselect();',
     '}',
     'addRect("BG_PRECIO_CMR",824,892,281,107,RED);',
     'addRect("BG_PRECIO_REGULAR",824,892,281,107,YELLOW);',
     'addRect("GRP_CMR",649,884,54,121,rgb(100,100,100));',
-    'alert("MTLKILLERS PS creado!\nCapas: TXT_DESC, TXT_SKU, TXT_PRECIO, TXT_DECIMAL, TXT_PRECIO_REGULAR, TXT_PRECIO_ANTES, BG_PRECIO_CMR, BG_PRECIO_REGULAR, GRP_CMR");'
+    'alert("MTLKILLERS PS creado!\nCapas listas: TXT_DESC, TXT_SKU, TXT_PRECIO, TXT_DECIMAL, TXT_PRECIO_REGULAR, TXT_PRECIO_ANTES, BG_PRECIO_CMR, BG_PRECIO_REGULAR, GRP_CMR");'
   ].join('\n');
 
   var aiJsx = [
