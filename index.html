@@ -228,7 +228,7 @@
   <div class="header">
     <div class="logo">MTL<span>KILLERS</span></div>
     <span class="badge">V1</span>
-    <span class="badge" style="margin-left:auto">SODIMAC → PHOTOSHOP</span>
+
   </div>
 
   <!-- STATUS -->
@@ -717,61 +717,56 @@ function parseProduct(html, url) {
   }
   if(!sku) sku = '—';
 
-  // ── PRECIOS — usando clases CSS de Sodimac ──────────────
+  // ── PRECIOS — directo desde __NEXT_DATA__ variants[0].prices ──
   var precioCMR = null, precioRegular = null, precioAntes = null;
 
-  function extraerPrecioCSS(html, patron) {
-    var m = html.match(patron);
-    if(!m) return null;
-    var num = parseFloat(m[1].replace(',', '.'));
-    return isNaN(num) ? null : num;
+  function getNum(val) {
+    var n = parseFloat(String(Array.isArray(val) ? val[0] : val).replace(/[^0-9.]/g,''));
+    return isNaN(n) || n < 1 ? null : n;
   }
 
-  // CMR: price-value con shade-red-text (sin crossed)
-  var rxCmr = /price-value[^>]*shade-red-text[^>]*>([\d.,]+)/i;
-  // También puede ser shade-red-text antes de price-value
-  var rxCmr2 = /shade-red-text[^>]*price-value[^>]*>([\d.,]+)/i;
-  precioCMR = extraerPrecioCSS(html, rxCmr) || extraerPrecioCSS(html, rxCmr2);
+  try {
+    var v0 = data.props.pageProps.productData.variants[0];
+    var prices = v0.prices || [];
 
-  // Precio tachado: price-value crossed
-  var rxAntes = /price-value[^"]*crossed[^>]*>([\d.,]+)/i;
-  precioAntes = extraerPrecioCSS(html, rxAntes);
+    prices.forEach(function(p) {
+      var num = getNum(p.price);
+      if(!num) return;
+      var t = (p.type || '').toLowerCase();
 
-  // Precio regular: price-value sin shade-red-text y sin crossed
-  // Buscar todos los price-value y filtrar los que no son CMR ni crossed
-  var rxTodos = /price-value"[^>]*>([\d.,]+)/gi;
-  var mTodos, preciosRegulares = [];
-  while((mTodos = rxTodos.exec(html)) !== null) {
-    // Verificar contexto cercano — no debe tener shade-red-text ni crossed
-    var ctx = html.substring(Math.max(0, mTodos.index-50), mTodos.index+50);
-    if(ctx.includes('shade-red-text') || ctx.includes('crossed')) continue;
-    var num = parseFloat(mTodos[1].replace(',', '.'));
-    if(!isNaN(num) && num > 1 && num < 500000) preciosRegulares.push(num);
-  }
-  if(preciosRegulares.length) {
-    precioRegular = Math.min.apply(null, preciosRegulares);
-  }
+      if(t === 'cmrprice' || t === 'offerprice' || t === 'cardprice') {
+        if(!precioCMR) precioCMR = num;
+      } else if(t === 'normalprice' || t === 'regularprice' || t === 'internetprice' || t === 'eventprice') {
+        if(!precioRegular) precioRegular = num;
+      } else if(t === 'crossed' || p.crossed === true) {
+        if(!precioAntes) precioAntes = num;
+      }
+    });
 
-  // Fallback: si no encontró nada con CSS, usar lógica de __NEXT_DATA__
-  if(!precioCMR && !precioRegular) {
-    try {
-      var v0 = data.props.pageProps.productData.variants[0];
-      var prices = v0.prices || [];
-      prices.forEach(function(p) {
-        var val = Array.isArray(p.price) ? p.price[0] : p.price;
-        var num = parseFloat(String(val).replace(/[^0-9.]/g,''));
-        if(isNaN(num) || num < 1) return;
-        var t = (p.type || '').toLowerCase();
-        if(t === 'cmrprice' || t === 'offerprice') { if(!precioCMR) precioCMR = num; }
-        else if(t === 'normalprice' || t === 'regularprice' || t === 'internetprice') { if(!precioRegular) precioRegular = num; }
-        else if(t === 'crossed') { if(!precioAntes) precioAntes = num; }
-      });
-    } catch(e) {}
+    // Si hay CMR y regular pero no antes, verificar si regular > CMR
+    // En ese caso regular se convierte en el precio "antes"
+    if(precioCMR && precioRegular && !precioAntes && precioRegular > precioCMR) {
+      precioAntes   = precioRegular;
+      precioRegular = null;
+    }
+
+  } catch(e) {
+    // Fallback: leer clases CSS del HTML
+    var rxCmr = /shade-red-text[^>]*price-value|price-value[^>]*shade-red-text/i;
+    if(rxCmr.test(html)) {
+      var mC = html.match(/shade-red-text[^>]*>([\d.,]+)|price-value[^>]*shade-red-text[^>]*>([\d.,]+)/i);
+      if(mC) precioCMR = parseFloat((mC[1]||mC[2]).replace(',','.')) || null;
+    }
+    var mA = html.match(/price-value[^"]*crossed[^>]*>([\d.,]+)/i);
+    if(mA) precioAntes = parseFloat(mA[1].replace(',','.')) || null;
+    var mR = html.match(/price-value"[^>]*>([\d.,]+)/i);
+    if(mR) precioRegular = parseFloat(mR[1].replace(',','.')) || null;
   }
 
   // Limpiar igualdades
   if(precioAntes && precioAntes === precioRegular) precioAntes = null;
   if(precioRegular && precioRegular === precioCMR) precioRegular = null;
+  if(precioAntes && precioAntes === precioCMR) precioAntes = null;
 
   // ── PRECIO M2 ────────────────────────────────────────────
   var esM2 = nombre.toLowerCase().includes('m2') || nombre.toLowerCase().includes('m²');
