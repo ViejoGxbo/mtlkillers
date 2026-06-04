@@ -4,572 +4,220 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MTLKILLERS V1</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-
-:root{
-  --bg:#0a0a0a;
-  --bg2:#111;
-  --bg3:#161616;
-  --card:#1a1a1a;
-  --border:#222;
-  --border2:#2a2a2a;
-  --text:#f0f0f0;
-  --muted:#555;
-  --dim:#888;
-  --accent:#ff3c00;
-  --accent2:#ff6b35;
-  --green:#22c55e;
-  --red:#ef4444;
-  --blue:#38bdf8;
-  --yellow:#ffd200;
-  --cmr:#dc001c;
-  --mono:'Space Mono',monospace;
-  --display:'Syne',sans-serif;
-}
-
-body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:var(--mono);
-  font-size:11px;
-  min-height:100vh;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  padding:0 0 60px;
-}
-
-/* ── TOP BAR ── */
-.topbar{
-  width:100%;
-  background:var(--bg2);
-  border-bottom:1px solid var(--border);
-  padding:0 24px;
-  height:52px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  position:sticky;
-  top:0;
-  z-index:50;
-}
-.logo{
-  font-family:var(--display);
-  font-size:20px;
-  font-weight:800;
-  letter-spacing:-0.5px;
-}
-.logo em{color:var(--accent);font-style:normal}
-.badge{
-  font-size:8px;
-  padding:2px 6px;
-  border:1px solid var(--border2);
-  border-radius:2px;
-  color:var(--muted);
-  letter-spacing:1px;
-  margin-left:8px;
-  vertical-align:middle;
-}
-.topbar-right{display:flex;align-items:center;gap:8px}
-
-/* ── WRAP ── */
-.wrap{width:100%;max-width:680px;padding:24px 16px 0}
-
-/* ── STATS BAR ── */
-.stats{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:1px;
-  background:var(--border);
-  border:1px solid var(--border);
-  border-radius:8px;
-  overflow:hidden;
-  margin-bottom:20px;
-}
-.stat{
-  background:var(--bg2);
-  padding:12px 16px;
-  text-align:center;
-}
-.stat-n{
-  font-family:var(--display);
-  font-size:24px;
-  font-weight:800;
-  display:block;
-  line-height:1;
-  margin-bottom:4px;
-}
-.stat-l{font-size:8px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
-.s-total .stat-n{color:var(--text)}
-.s-done .stat-n{color:var(--green)}
-.s-pend .stat-n{color:#f59e0b}
-.s-err .stat-n{color:var(--red)}
-
-/* ── SECTION ── */
-.section{margin-bottom:16px}
-.section-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  margin-bottom:8px;
-}
-.section-title{
-  font-size:8px;
-  letter-spacing:2px;
-  text-transform:uppercase;
-  color:var(--muted);
-}
-
-/* ── URL CARDS ── */
-.url-list{display:flex;flex-direction:column;gap:4px}
-.url-row{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  background:var(--bg2);
-  border:1px solid var(--border);
-  border-radius:6px;
-  padding:8px 12px;
-  transition:border-color 0.2s,background 0.2s;
-}
-.url-row.done{border-color:#166534;background:#0a1f12}
-.url-row.error{border-color:#7f1d1d;background:#1a0808}
-.url-row.loading{border-color:var(--accent);animation:pulse 1.5s infinite}
-@keyframes pulse{0%,100%{border-color:var(--accent)}50%{border-color:#7f1e00}}
-
-.url-num{
-  width:20px;height:20px;
-  border-radius:4px;
-  background:var(--bg3);
-  font-size:9px;font-weight:700;
-  color:var(--muted);
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;
-}
-.url-row.done .url-num{background:#14532d;color:var(--green)}
-.url-row.error .url-num{background:#450a0a;color:var(--red)}
-.url-row.loading .url-num{background:#2c0d00;color:var(--accent)}
-
-.url-input{
-  flex:1;
-  background:transparent;border:none;
-  color:var(--text);
-  font-family:var(--mono);font-size:10px;
-  outline:none;
-}
-.url-input::placeholder{color:var(--muted)}
-
-.url-info{
-  font-size:9px;color:var(--green);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  max-width:140px;
-}
-.url-info.err{color:var(--red)}
-
-.url-del{
-  background:none;border:none;
-  color:var(--muted);cursor:pointer;
-  font-size:12px;padding:0 2px;
-  transition:color 0.15s;flex-shrink:0;
-  line-height:1;
-}
-.url-del:hover{color:var(--red)}
-
-/* ── ADD BUTTONS ── */
-.add-btns{display:flex;gap:4px}
-.btn-add{
-  background:var(--bg3);
-  border:1px solid var(--border2);
-  color:var(--dim);
-  border-radius:4px;
-  padding:3px 8px;
-  font-family:var(--mono);
-  font-size:8px;
-  cursor:pointer;
-  letter-spacing:0.5px;
-  transition:all 0.15s;
-}
-.btn-add:hover{border-color:#444;color:var(--text)}
-
-/* ── PROGRESS ── */
-.prog{
-  height:2px;
-  background:var(--bg3);
-  border-radius:1px;
-  margin:12px 0;
-  overflow:hidden;
-}
-.prog-fill{
-  height:100%;
-  background:linear-gradient(90deg,var(--accent),var(--accent2));
-  border-radius:1px;
-  transition:width 0.4s ease;
-  width:0%;
-}
-
-/* ── EXT BANNER ── */
-.ext-connected{
-  background:#0a1f12;
-  border:1px solid #166534;
-  border-radius:6px;
-  padding:10px 14px;
-  margin-bottom:12px;
-  display:none;
-  align-items:center;
-  gap:8px;
-}
-.ext-connected.show{display:flex}
-.ext-dot{
-  width:6px;height:6px;
-  background:var(--green);
-  border-radius:50%;
-  flex-shrink:0;
-  box-shadow:0 0 6px var(--green);
-}
-.ext-connected-text{font-size:9px;color:var(--green)}
-
-.ext-install{
-  background:var(--bg2);
-  border:1px solid var(--border);
-  border-radius:6px;
-  padding:10px 14px;
-  margin-bottom:12px;
-}
-.ext-install-title{font-size:9px;color:var(--dim);margin-bottom:8px}
-.ext-row{display:flex;gap:6px;align-items:center}
-.ext-id-input{
-  flex:1;
-  background:var(--bg);
-  border:1px solid var(--border2);
-  color:var(--text);
-  font-family:var(--mono);font-size:9px;
-  padding:6px 10px;border-radius:4px;outline:none;
-  transition:border-color 0.15s;
-}
-.ext-id-input:focus{border-color:var(--accent)}
-.ext-id-input::placeholder{color:var(--muted)}
-.ext-note{font-size:8px;color:var(--muted);margin-top:6px;line-height:1.6}
-.ext-note code{color:var(--accent)}
-
-/* ── ACTIONS ── */
-.actions{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
-
-.btn{
-  border:none;border-radius:6px;cursor:pointer;
-  font-family:var(--mono);font-weight:700;
-  letter-spacing:0.5px;
-  transition:all 0.15s;
-  display:flex;align-items:center;justify-content:center;gap:8px;
-}
-.btn:active{transform:scale(0.98)}
-
-.btn-primary{
-  background:var(--accent);color:#fff;
-  padding:13px;width:100%;font-size:11px;
-  letter-spacing:1px;
-}
-.btn-primary:hover{background:var(--accent2)}
-.btn-primary:disabled{
-  background:var(--bg3);color:var(--muted);
-  cursor:not-allowed;transform:none;
-}
-
-.btn-secondary{
-  background:var(--bg2);color:var(--dim);
-  border:1px solid var(--border);
-  padding:9px 14px;font-size:9px;
-}
-.btn-secondary:hover{border-color:#333;color:var(--text)}
-
-.btn-outline{
-  background:transparent;color:var(--dim);
-  border:1px solid var(--border2);
-  padding:9px 14px;font-size:9px;
-}
-.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
-
-.btn-green{
-  background:#052e16;color:var(--green);
-  border:1px solid #166534;
-  padding:12px;font-size:11px;
-  letter-spacing:1px;flex:1;
-}
-.btn-green:hover{background:#0a4a24}
-.btn-green:disabled{background:var(--bg3);color:var(--muted);border-color:var(--border);cursor:not-allowed}
-
-.btn-row{display:flex;gap:6px}
-.btn-row .btn{flex:1}
-
-/* ── PREVIEW CARDS ── */
-.preview-list{display:flex;flex-direction:column;gap:8px}
-
-.pcard{
-  background:var(--card);
-  border:1px solid var(--border2);
-  border-radius:8px;
-  overflow:hidden;
-  transition:border-color 0.2s;
-}
-.pcard:hover{border-color:#333}
-
-.pcard-head{
-  background:var(--bg2);
-  padding:8px 14px;
-  display:flex;align-items:center;justify-content:space-between;
-  border-bottom:1px solid var(--border);
-}
-.pcard-num{font-size:9px;color:var(--accent);font-weight:700;letter-spacing:1px}
-.pcard-stock{
-  font-size:8px;font-weight:700;letter-spacing:1px;
-  padding:2px 6px;border-radius:2px;
-}
-.pcard-stock.ok{color:var(--green);background:#052e16}
-.pcard-stock.no{color:var(--red);background:#450a0a}
-
-.pcard-body{display:flex;min-height:90px}
-.pcard-left{
-  flex:1;padding:12px 14px;
-  border-right:1px solid var(--border);
-}
-.pcard-marca{font-size:8px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
-.pcard-nombre{font-size:11px;color:var(--text);line-height:1.5;margin-bottom:8px}
-.pcard-sku{font-size:9px;color:var(--muted)}
-.pcard-sku span{color:var(--dim)}
-
-.pcard-right{
-  padding:12px 14px;
-  min-width:150px;
-  display:flex;flex-direction:column;
-  align-items:flex-end;justify-content:center;
-  gap:6px;
-}
-
-.price-badge{
-  display:inline-flex;align-items:baseline;gap:2px;
-  border-radius:6px;padding:8px 12px;
-  margin-bottom:2px;
-}
-.price-badge.cmr{background:var(--cmr)}
-.price-badge.regular{background:var(--yellow)}
-.price-badge .ps{font-size:9px;font-weight:700}
-.price-badge .pe{font-family:var(--display);font-size:28px;font-weight:800;line-height:1}
-.price-badge .pd{font-size:10px;font-weight:700;align-self:flex-start;margin-top:3px}
-.price-badge.cmr .ps,.price-badge.cmr .pe,.price-badge.cmr .pd{color:#fff}
-.price-badge.regular .ps,.price-badge.regular .pe,.price-badge.regular .pd{color:#000}
-
-.cmr-badge{
-  font-size:8px;font-weight:700;
-  background:#450a0a;color:#fca5a5;
-  padding:2px 6px;border-radius:2px;
-  letter-spacing:0.5px;
-}
-.price-reg{font-size:9px;color:var(--dim)}
-.price-antes{font-size:9px;color:var(--muted);text-decoration:line-through}
-
-/* ── STEPS ── */
-.steps-box{
-  background:var(--bg2);
-  border:1px solid var(--border);
-  border-radius:6px;
-  padding:14px;
-  margin-top:6px;
-}
-.step{display:flex;gap:10px;margin-bottom:8px;align-items:flex-start}
-.step:last-child{margin-bottom:0}
-.step-n{
-  width:18px;height:18px;border-radius:50%;
-  background:var(--accent);color:#fff;
-  font-size:8px;font-weight:700;
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;margin-top:1px;
-}
-.step-t{font-size:9px;color:var(--dim);line-height:1.6}
-.step-t code{color:var(--accent)}
-
-/* ── LOG ── */
-.log-box{
-  background:var(--bg2);
-  border:1px solid var(--border);
-  border-radius:6px;
-  padding:10px 12px;
-  height:90px;overflow-y:auto;
-  font-size:9px;line-height:1.8;
-}
-.log-box::-webkit-scrollbar{width:3px}
-.log-box::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
-.ll{display:block}
-.ll-ok{color:var(--green)}
-.ll-err{color:var(--red)}
-.ll-warn{color:#f59e0b}
-.ll-info{color:var(--blue)}
-.ll-def{color:var(--muted)}
-
-/* ── HR ── */
-hr{border:none;border-top:1px solid var(--border);margin:16px 0}
-
-/* ── MODAL ── */
-.modal{
-  display:none;position:fixed;inset:0;
-  background:rgba(0,0,0,0.85);
-  z-index:100;align-items:center;justify-content:center;
-}
-.modal.show{display:flex}
-.modal-box{
-  background:var(--bg2);
-  border:1px solid var(--border2);
-  border-radius:10px;
-  padding:20px;
-  width:90%;max-width:480px;
-}
-.modal-title{font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
-.modal-textarea{
-  width:100%;height:140px;
-  background:var(--bg);
-  border:1px solid var(--border2);
-  color:var(--text);
-  font-family:var(--mono);font-size:10px;
-  padding:10px;border-radius:6px;
-  resize:none;outline:none;
-  transition:border-color 0.15s;
-}
-.modal-textarea:focus{border-color:var(--accent)}
-.modal-actions{display:flex;gap:8px;margin-top:10px}
-.modal-actions .btn{flex:1;padding:10px;font-size:10px}
-
-/* ── STATUS MSG ── */
-.status-msg{font-size:9px;color:var(--muted)}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#141414; --bg2:#1c1c1c; --bg3:#242424;
+    --border:#2e2e2e; --text:#e8e8e8; --muted:#666;
+    --dim:#999; --accent:#ff3c00; --green:#39d353;
+    --red:#ff4444; --blue:#00b4d8; --mono:'Courier New',monospace;
+  }
+  body { background:var(--bg); color:var(--text); font-family:var(--mono); font-size:12px; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 16px 40px; }
+  .wrap { width:100%; max-width:560px; }
+  .header { display:flex; align-items:baseline; gap:10px; margin-bottom:24px; padding-bottom:14px; border-bottom:1px solid var(--border); }
+  .logo { font-size:22px; font-weight:700; letter-spacing:2px; }
+  .logo span { color:var(--accent); }
+  .badge { font-size:9px; color:var(--muted); border:1px solid var(--border); padding:2px 6px; border-radius:3px; letter-spacing:1px; }
+  .section { margin-bottom:20px; }
+  .section-label { font-size:9px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; }
+  .card-list { display:flex; flex-direction:column; gap:6px; }
+  .card-row { display:flex; gap:6px; align-items:center; background:var(--bg2); border:1px solid var(--border); border-radius:4px; padding:8px 10px; transition:border-color 0.15s; }
+  .card-row.done { border-color:#1a4a1a; }
+  .card-row.error { border-color:#4a1a1a; }
+  .card-row.loading { border-color:var(--accent); }
+  .card-num { width:22px; height:22px; background:var(--bg3); border-radius:3px; font-size:10px; font-weight:700; color:var(--muted); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .card-num.done { background:#0d2b0d; color:var(--green); }
+  .card-num.error { background:#2b0d0d; color:var(--red); }
+  .card-num.loading { background:#2b1a00; color:var(--accent); }
+  .card-input { flex:1; background:transparent; border:none; color:var(--text); font-family:var(--mono); font-size:10px; outline:none; }
+  .card-input::placeholder { color:var(--muted); }
+  .card-info { font-size:9px; color:var(--green); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px; }
+  .card-info.err { color:var(--red); }
+  .card-remove { background:none; border:none; color:var(--muted); cursor:pointer; font-size:11px; padding:0 2px; transition:color 0.15s; flex-shrink:0; }
+  .card-remove:hover { color:var(--red); }
+  .btn { border:none; border-radius:4px; cursor:pointer; font-family:var(--mono); font-weight:700; letter-spacing:1px; transition:all 0.15s; display:flex; align-items:center; justify-content:center; gap:6px; }
+  .btn:active { transform:scale(0.98); }
+  .btn-primary { background:var(--accent); color:#fff; padding:10px; width:100%; font-size:11px; margin-bottom:6px; }
+  .btn-primary:hover { background:#ff5520; }
+  .btn-primary:disabled { background:var(--bg3); color:var(--muted); cursor:not-allowed; }
+  .btn-secondary { background:var(--bg2); color:var(--dim); border:1px solid var(--border); padding:8px; font-size:10px; }
+  .btn-secondary:hover { border-color:#444; color:var(--text); }
+  .btn-row { display:flex; gap:6px; margin-bottom:6px; }
+  .btn-row .btn { flex:1; }
+  .btn-green { background:#0d2b0d; color:var(--green); border:1px solid #1a4a1a; padding:12px; width:100%; font-size:13px; margin-bottom:6px; }
+  .btn-green:hover { background:#123a12; }
+  .btn-green:disabled { background:var(--bg3); color:var(--muted); cursor:not-allowed; border-color:var(--border); }
+  .prog-bar { height:2px; background:var(--bg3); border-radius:1px; margin:8px 0; overflow:hidden; }
+  .prog-fill { height:100%; background:var(--accent); border-radius:1px; transition:width 0.3s; width:0%; }
+  /* PREVIEW CARDS */
+  .preview-card { background:var(--bg2); border:1px solid var(--border); border-radius:4px; margin-bottom:6px; overflow:hidden; }
+  .preview-head { background:var(--bg3); padding:6px 12px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
+  .preview-num { font-size:9px; color:var(--accent); font-weight:700; letter-spacing:1px; }
+  .preview-stock { font-size:8px; font-weight:700; letter-spacing:1px; }
+  .preview-stock.ok { color:var(--green); }
+  .preview-stock.no { color:var(--red); }
+  .preview-body { display:flex; }
+  .preview-left { flex:1; padding:10px 12px; border-right:1px solid var(--border); }
+  .preview-marca { font-size:8px; color:var(--muted); letter-spacing:1px; margin-bottom:3px; }
+  .preview-nombre { font-size:11px; color:var(--text); line-height:1.4; margin-bottom:6px; }
+  .preview-sku { font-size:9px; color:var(--muted); }
+  .preview-sku span { color:var(--dim); }
+  .preview-actions { display:flex; gap:4px; margin-top:6px; }
+  .btn-url { background:var(--bg3); border:1px solid var(--border); color:var(--muted); font-family:var(--mono); font-size:8px; padding:3px 7px; border-radius:3px; cursor:pointer; letter-spacing:0.5px; transition:all 0.15s; }
+  .btn-url:hover { border-color:var(--accent); color:var(--accent); }
+  .preview-right { padding:10px 12px; min-width:140px; display:flex; flex-direction:column; align-items:flex-end; justify-content:center; gap:4px; }
+  .price-box { display:inline-flex; align-items:baseline; gap:2px; border-radius:5px; padding:7px 10px; }
+  .price-box.cmr { background:#dc001c; }
+  .price-box.reg { background:#ffd200; }
+  .price-box .ps { font-size:9px; font-weight:700; }
+  .price-box .pe { font-size:26px; font-weight:900; line-height:1; font-family:var(--mono); }
+  .price-box .pd { font-size:10px; font-weight:700; align-self:flex-start; margin-top:2px; }
+  .price-box.cmr .ps,.price-box.cmr .pe,.price-box.cmr .pd { color:#fff; }
+  .price-box.reg .ps,.price-box.reg .pe,.price-box.reg .pd { color:#000; }
+  .cmr-tag { font-size:8px; font-weight:700; background:#450a0a; color:#fca5a5; padding:2px 5px; border-radius:2px; }
+  .price-reg { font-size:9px; color:var(--dim); }
+  .price-antes { font-size:9px; color:var(--muted); text-decoration:line-through; }
+  /* STEPS */
+  .steps { background:var(--bg2); border:1px solid var(--border); border-radius:4px; padding:12px 14px; }
+  .step { display:flex; gap:10px; margin-bottom:8px; align-items:flex-start; }
+  .step:last-child { margin-bottom:0; }
+  .step-num { width:18px; height:18px; border-radius:50%; background:var(--accent); color:#fff; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+  .step-text { font-size:10px; color:var(--dim); line-height:1.5; }
+  .step-text code { color:var(--accent); }
+  .log-box { background:var(--bg2); border:1px solid var(--border); border-radius:4px; padding:8px 10px; height:80px; overflow-y:auto; font-size:9px; line-height:1.7; color:var(--muted); }
+  .log-box::-webkit-scrollbar { width:3px; }
+  .log-box::-webkit-scrollbar-thumb { background:#333; border-radius:2px; }
+  .ll-ok { color:var(--green); display:block; }
+  .ll-err { color:var(--red); display:block; }
+  .ll-warn { color:#ff8c00; display:block; }
+  .ll-info { color:var(--blue); display:block; }
+  .ll-def { color:var(--muted); display:block; }
+  hr { border:none; border-top:1px solid var(--border); margin:16px 0; }
+  .status-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .status-text { font-size:10px; color:var(--muted); }
+  .counts { display:flex; gap:12px; }
+  .count { text-align:center; }
+  .count-n { font-size:16px; font-weight:700; display:block; }
+  .count-l { font-size:8px; color:var(--muted); text-transform:uppercase; display:block; }
+  .ct { color:var(--text); } .cd { color:var(--green); } .cp { color:#ff8c00; } .ce { color:var(--red); }
+  /* MODAL */
+  #pasteModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:100; align-items:center; justify-content:center; }
+  #pasteModal.show { display:flex; }
+  .modal-box { background:var(--bg2); border:1px solid var(--border); border-radius:6px; padding:20px; width:90%; max-width:480px; }
+  .modal-title { font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
+  .modal-textarea { width:100%; height:140px; background:var(--bg); border:1px solid var(--border); color:var(--text); font-family:var(--mono); font-size:10px; padding:8px; border-radius:3px; resize:none; outline:none; }
+  .modal-btns { display:flex; gap:8px; margin-top:10px; }
+  .modal-btns .btn { flex:1; padding:10px; font-size:10px; margin:0; }
+  /* EXT */
+  #extBanner { background:#0d2b0d; border:1px solid #1a4a1a; border-radius:4px; padding:8px 12px; margin-bottom:12px; display:none; }
+  #extBanner.show { display:block; }
+  .ext-ok { font-size:10px; color:var(--green); margin-bottom:2px; }
+  .ext-ok-sub { font-size:9px; color:var(--muted); }
+  #extInstall { background:var(--bg2); border:1px solid var(--border); border-radius:4px; padding:8px 12px; margin-bottom:12px; }
+  .ext-title { font-size:10px; color:var(--muted); margin-bottom:6px; }
+  .ext-row { display:flex; gap:6px; align-items:center; }
+  .ext-input { flex:2; background:var(--bg); border:1px solid var(--border); color:var(--text); font-family:var(--mono); font-size:9px; padding:5px 8px; border-radius:3px; outline:none; }
+  .ext-input::placeholder { color:var(--muted); }
+  .ext-note { font-size:9px; color:var(--muted); margin-top:5px; line-height:1.5; }
+  .ext-note code { color:var(--accent); }
 </style>
 </head>
 <body>
-
-<!-- TOP BAR -->
-<div class="topbar">
-  <div>
-    <span class="logo">MTL<em>KILLERS</em></span>
+<div class="wrap">
+  <div class="header">
+    <div class="logo">MTL<span>KILLERS</span></div>
     <span class="badge">V1</span>
   </div>
-  <div class="topbar-right">
-    <span class="status-msg" id="statusMsg">Listo</span>
-  </div>
-</div>
 
-<div class="wrap">
-
-  <!-- STATS -->
-  <div class="stats" style="margin-top:20px">
-    <div class="stat s-total">
-      <span class="stat-n" id="cTotal">0</span>
-      <span class="stat-l">Total</span>
-    </div>
-    <div class="stat s-done">
-      <span class="stat-n" id="cDone">0</span>
-      <span class="stat-l">Listos</span>
-    </div>
-    <div class="stat s-pend">
-      <span class="stat-n" id="cPend">0</span>
-      <span class="stat-l">Pendientes</span>
-    </div>
-    <div class="stat s-err">
-      <span class="stat-n" id="cErrs">0</span>
-      <span class="stat-l">Errores</span>
+  <div class="status-row">
+    <span class="status-text" id="statusTxt">Agrega URLs y extrae los datos</span>
+    <div class="counts">
+      <div class="count"><span class="count-n ct" id="cTotal">0</span><span class="count-l">Total</span></div>
+      <div class="count"><span class="count-n cd" id="cDone">0</span><span class="count-l">Listos</span></div>
+      <div class="count"><span class="count-n cp" id="cPend">0</span><span class="count-l">Pend.</span></div>
+      <div class="count"><span class="count-n ce" id="cErrs">0</span><span class="count-l">Errores</span></div>
     </div>
   </div>
 
-  <!-- URLS -->
   <div class="section">
-    <div class="section-head">
-      <span class="section-title">URLs de productos</span>
-      <div class="add-btns">
-        <button class="btn-add" onclick="addCard()">+ URL</button>
-        <button class="btn-add" onclick="addCards(5)">+5</button>
-        <button class="btn-add" onclick="addCards(10)">+10</button>
+    <div class="section-label">
+      URLs de productos
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-secondary" style="padding:3px 8px;font-size:9px" onclick="addCard()">+ Agregar</button>
+        <button class="btn btn-secondary" style="padding:3px 8px;font-size:9px" onclick="addCards(5)">+5</button>
+        <button class="btn btn-secondary" style="padding:3px 8px;font-size:9px" onclick="addCards(10)">+10</button>
       </div>
     </div>
-    <div class="url-list" id="urlList"></div>
+    <div class="card-list" id="cardList"></div>
   </div>
 
-  <!-- PROGRESS -->
-  <div class="prog"><div class="prog-fill" id="progFill"></div></div>
+  <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
 
-  <!-- EXT CONNECTED -->
-  <div class="ext-connected" id="extBanner">
-    <div class="ext-dot"></div>
-    <span class="ext-connected-text">Extensión MTLKILLERS conectada — Sin proxies, sin bloqueos</span>
+  <div id="extBanner">
+    <div class="ext-ok">✓ EXTENSIÓN CONECTADA — Sin proxies, sin bloqueos</div>
+    <div class="ext-ok-sub">Extrayendo datos directamente desde Sodimac</div>
   </div>
-
-  <!-- EXT INSTALL -->
-  <div class="ext-install" id="extInstall">
-    <div class="ext-install-title">⚡ Extensión Chrome — para URLs bloqueadas</div>
+  <div id="extInstall">
+    <div class="ext-title">⚡ Para URLs que fallan, instala la extensión MTLKILLERS</div>
     <div class="ext-row">
-      <button class="btn btn-outline" style="padding:6px 10px;font-size:9px;white-space:nowrap" onclick="downloadExt()">⬇ Descargar</button>
-      <input class="ext-id-input" id="extIdInput" placeholder="Pega el ID de la extensión aquí" />
-      <button class="btn btn-outline" style="padding:6px 12px;font-size:9px" onclick="connectExt()">Conectar</button>
+      <button class="btn btn-secondary" style="padding:5px 10px;font-size:9px;flex:1" onclick="downloadExtension()">⬇ Descargar extensión</button>
+      <input id="extIdInput" class="ext-input" placeholder="Pega el ID de la extensión aquí" />
+      <button class="btn btn-secondary" style="padding:5px 10px;font-size:9px" onclick="connectExtension()">Conectar</button>
     </div>
-    <div class="ext-note">Extrae → descomprime → <code>chrome://extensions</code> → Modo desarrollador → Cargar descomprimida → copia el ID</div>
+    <div class="ext-note">Descarga → extrae → <code>chrome://extensions</code> → Modo desarrollador → Cargar descomprimida → copia el ID</div>
   </div>
 
-  <!-- ACTIONS -->
-  <div class="actions">
-    <button class="btn btn-outline" style="width:100%;font-size:9px" onclick="generateDocAI()">⬡ CREAR DOCUMENTO BASE EN ILLUSTRATOR</button>
+  <div class="section">
+    <button class="btn btn-secondary" style="width:100%;margin-bottom:6px" onclick="generateDocAI()">⬡ CREAR DOCUMENTO BASE EN AI</button>
     <button class="btn btn-primary" id="btnFetch" onclick="fetchAll()">⬇ EXTRAER DATOS DE SODIMAC</button>
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="clearAll()">↺ Limpiar</button>
-      <button class="btn btn-secondary" onclick="openPasteModal()">📋 Pegar lista</button>
+      <button class="btn btn-secondary" onclick="clearAll()">↺ Limpiar todo</button>
+      <button class="btn btn-secondary" onclick="openPaste()">📋 Pegar lista</button>
     </div>
   </div>
 
-  <!-- PREVIEW -->
-  <div id="previewSection" style="display:none">
-    <div class="section">
-      <div class="section-head">
-        <span class="section-title">Datos extraídos</span>
-      </div>
-      <div class="preview-list" id="previewList"></div>
-    </div>
+  <div class="section" id="previewSection" style="display:none">
+    <div class="section-label">Datos extraídos</div>
+    <div id="previewList"></div>
+  </div>
 
-    <!-- GENERATE -->
-    <div class="section">
-      <div class="btn-row" style="margin-bottom:6px">
-        <button class="btn btn-green" onclick="generateJsx('ps')">✦ JSX PHOTOSHOP</button>
-        <button class="btn btn-green" onclick="generateJsx('ai')">✦ JSX ILLUSTRATOR</button>
-      </div>
-      <div class="steps-box">
-        <div class="step"><div class="step-n">1</div><div class="step-t">Descarga el JSX generado</div></div>
-        <div class="step"><div class="step-n">2</div><div class="step-t">Abre tu archivo en Photoshop o Illustrator</div></div>
-        <div class="step"><div class="step-n">3</div><div class="step-t"><code>Archivo → Scripts → Ejecutar script...</code></div></div>
-        <div class="step"><div class="step-n">4</div><div class="step-t">Las capas se llenan y exportan automáticamente</div></div>
-      </div>
+  <div class="section" id="generateSection" style="display:none">
+    <div class="btn-row" style="margin-bottom:6px">
+      <button class="btn btn-green" style="font-size:11px" onclick="generateJsx('ps')">✦ JSX PHOTOSHOP</button>
+      <button class="btn btn-green" style="font-size:11px" onclick="generateJsx('ai')">✦ JSX ILLUSTRATOR</button>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-text">Descarga el JSX generado</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-text">Abre tu archivo en Photoshop o Illustrator</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-text"><code>Archivo → Scripts → Ejecutar script...</code></div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-text">Las capas se llenan y exportan automáticamente</div></div>
     </div>
   </div>
 
   <hr>
 
-  <!-- LOG -->
   <div class="section">
-    <div class="section-head">
-      <span class="section-title">Log</span>
-      <button class="btn-add" onclick="clearLog()">limpiar</button>
+    <div class="section-label">
+      Log
+      <button class="btn btn-secondary" style="padding:2px 8px;font-size:9px" onclick="clearLog()">limpiar</button>
     </div>
     <div class="log-box" id="logBox"></div>
   </div>
-
 </div>
 
-<!-- PASTE MODAL -->
-<div class="modal" id="pasteModal">
+<div id="pasteModal">
   <div class="modal-box">
     <div class="modal-title">Pegar lista de URLs (una por línea)</div>
-    <textarea class="modal-textarea" id="pasteArea" placeholder="https://www.sodimac.com.pe/...&#10;https://www.sodimac.com.pe/..."></textarea>
-    <div class="modal-actions">
-      <button class="btn btn-primary" style="margin:0" onclick="confirmPaste()">Agregar URLs</button>
-      <button class="btn btn-secondary" onclick="closePasteModal()">Cancelar</button>
+    <textarea class="modal-textarea" id="pasteArea" placeholder="https://www.sodimac.com.pe/..."></textarea>
+    <div class="modal-btns">
+      <button class="btn btn-primary" onclick="confirmPaste()">Agregar URLs</button>
+      <button class="btn btn-secondary" onclick="closePaste()">Cancelar</button>
     </div>
   </div>
 </div>
 
 <script>
+
 // ── ESTADO ───────────────────────────────────────────────
 var cards = [], cardId = 0;
 var EXT_ID = localStorage.getItem('mtlkillers_ext_id') || null;
@@ -644,6 +292,7 @@ function updateCounts(){
 function updateSections(){
   var done=cards.filter(function(c){return c.status==='done'&&c.data});
   document.getElementById('previewSection').style.display=done.length?'block':'none';
+  document.getElementById('generateSection').style.display=done.length?'block':'none';
   renderPreviews(done);
 }
 
@@ -659,36 +308,40 @@ function renderPreviews(done){
     var hasAntes=d.precioAntes!=='—'&&d.precioAntes!=='';
     var pBlock='';
     if(hasCmr){
-      pBlock='<div class="cmr-badge">CMR + Débito</div>'+
-        '<div class="price-badge cmr"><span class="ps">S/</span><span class="pe">'+d.precioEntero+'</span><span class="pd">'+d.precioDecimal+'</span></div>'+
+      pBlock='<div class="cmr-tag">CMR + Débito</div>'+
+        '<div class="price-box cmr"><span class="ps">S/</span><span class="pe">'+d.precioEntero+'</span><span class="pd">'+d.precioDecimal+'</span></div>'+
         '<div class="price-reg">Regular: S/ '+d.precioNormal+'</div>'+
         (hasAntes?'<div class="price-antes">Antes: S/ '+d.precioAntes+'</div>':'');
     } else {
-      pBlock='<div class="price-badge regular"><span class="ps">S/</span><span class="pe">'+d.precioEntero+'</span><span class="pd">'+d.precioDecimal+'</span></div>'+
+      pBlock='<div class="price-box reg"><span class="ps">S/</span><span class="pe">'+d.precioEntero+'</span><span class="pd">'+d.precioDecimal+'</span></div>'+
         (hasAntes?'<div class="price-antes">Antes: S/ '+d.precioAntes+'</div>':'');
     }
+    var cardUrl=card.url||'';
     var div=document.createElement('div');
-    div.className='pcard';
+    div.className='preview-card';
     div.innerHTML=
-      '<div class="pcard-head">'+
-        '<span class="pcard-num">CARD #'+(i+1)+'</span>'+
-        '<span class="pcard-stock '+(d.stock==='DISPONIBLE'?'ok':'no')+'">'+d.stock+'</span>'+
+      '<div class="preview-head">'+
+        '<span class="preview-num">CARD #'+(i+1)+'</span>'+
+        '<span class="preview-stock '+(d.stock==='DISPONIBLE'?'ok':'no')+'">'+d.stock+'</span>'+
       '</div>'+
-      '<div class="pcard-body">'+
-        '<div class="pcard-left">'+
-          '<div class="pcard-marca">'+esc(d.marca)+'</div>'+
-          '<div class="pcard-nombre">'+esc(d.nombre)+'</div>'+
-          '<div class="pcard-sku">SKU: <span>'+esc(d.sku)+'</span></div>'+
+      '<div class="preview-body">'+
+        '<div class="preview-left">'+
+          '<div class="preview-marca">'+esc(d.marca)+'</div>'+
+          '<div class="preview-nombre">'+esc(d.nombre)+'</div>'+
+          '<div class="preview-sku">SKU: <span>'+esc(d.sku)+'</span></div>'+
+          '<div class="preview-actions">'+
+            (cardUrl?'<button class="btn-url" onclick="window.open(''+cardUrl+'','_blank')">↗ Ver en Sodimac</button>':'')+''+
+          '</div>'+
         '</div>'+
-        '<div class="pcard-right">'+pBlock+'</div>'+
+        '<div class="preview-right">'+pBlock+'</div>'+
       '</div>';
     list.appendChild(div);
   });
 }
 
 // ── PASTE MODAL ──────────────────────────────────────────
-function openPasteModal(){var m=document.getElementById('pasteModal');m.classList.add('show');document.getElementById('pasteArea').value='';document.getElementById('pasteArea').focus()}
-function closePasteModal(){document.getElementById('pasteModal').classList.remove('show')}
+function openPaste(){var m=document.getElementById('pasteModal');m.classList.add('show');document.getElementById('pasteArea').value='';document.getElementById('pasteArea').focus()}
+function closePaste(){document.getElementById('pasteModal').classList.remove('show')}
 function confirmPaste(){
   var lines=document.getElementById('pasteArea').value.split('\n').map(function(l){return l.trim()}).filter(function(l){return l.startsWith('http')});
   lines.forEach(function(url){
@@ -1053,44 +706,70 @@ function generateDocAI(){
   if(!total){log('Agrega al menos una card primero','warn');return}
   var jsx=[
 '#target illustrator','// MTLKILLERS V1 — Crear documento base','',
-'var W=1080,H=1080,GAP=20,TOTAL='+total+';',
-'var doc=app.documents.add(DocumentColorSpace.RGB,W,H,TOTAL,DocumentArtboardLayout.GridByRow,GAP,TOTAL);',
+'var W=1080,H=1080;',
+'// Crear documento con 1 sola mesa de trabajo',
+'var doc=app.documents.add(DocumentColorSpace.RGB,W,H,1);',
 'doc.name="MTLKILLERS_BASE";',
-'for(var i=0;i<TOTAL;i++){doc.artboards[i].name=String(i+1);doc.artboards[i].artboardRect=[i*(W+GAP),0,i*(W+GAP)+W,-H];}',
+'doc.artboards[0].name="LIMA 1";',
+'doc.artboards[0].artboardRect=[0,0,W,-H];',
 'function rgb(r,g,b){var c=new RGBColor();c.red=r;c.green=g;c.blue=b;return c;}',
 'var WHITE=rgb(255,255,255),DARK=rgb(30,30,30),GRAY=rgb(180,180,180),RED=rgb(220,0,28),YELLOW=rgb(255,210,0);',
-'for(var i=0;i<TOTAL;i++){',
-'  doc.artboards.setActiveArtboardIndex(i);var x0=i*(W+GAP);',
-'  var bg=doc.pathItems.rectangle(0,x0,W,H);bg.filled=true;bg.fillColor=DARK;bg.stroked=false;bg.name="BG_CARD";',
-'  var tfD=doc.textFrames.add();tfD.name="TXT_DESC";tfD.contents="Nombre del producto";',
-'  tfD.position=[x0+216,-(935)];tfD.textRange.characterAttributes.size=31;',
-'  try{tfD.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Regular");}catch(e){}',
-'  tfD.textRange.characterAttributes.fillColor=WHITE;',
-'  var tfS=doc.textFrames.add();tfS.name="TXT_SKU";tfS.contents="SKU: 0000000";',
-'  tfS.position=[x0+290,-(1036)];tfS.textRange.characterAttributes.size=22;',
-'  try{tfS.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Regular");}catch(e){}',
-'  tfS.textRange.characterAttributes.fillColor=GRAY;',
-'  var bgC=doc.pathItems.roundedRectangle(-(892),x0+824,281,107,10,10);bgC.name="BG_PRECIO_CMR";bgC.filled=true;bgC.fillColor=RED;bgC.stroked=false;',
-'  var bgR=doc.pathItems.roundedRectangle(-(892),x0+824,281,107,10,10);bgR.name="BG_PRECIO_REGULAR";bgR.filled=true;bgR.fillColor=YELLOW;bgR.stroked=false;bgR.hidden=true;',
-'  var tfP=doc.textFrames.add();tfP.name="TXT_PRECIO";tfP.contents="000";',
-'  tfP.position=[x0+835,-(809)];tfP.textRange.characterAttributes.size=76;',
-'  try{tfP.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Bold");}catch(e){}',
-'  tfP.textRange.characterAttributes.fillColor=WHITE;',
-'  var tfDec=doc.textFrames.add();tfDec.name="TXT_DECIMAL";tfDec.contents=".00";',
-'  tfDec.position=[x0+836,-(967)];tfDec.textRange.characterAttributes.size=23;',
-'  try{tfDec.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Bold");}catch(e){}',
-'  tfDec.textRange.characterAttributes.fillColor=WHITE;',
-'  var tfR=doc.textFrames.add();tfR.name="TXT_PRECIO_REGULAR";tfR.contents="Precio regular: S/ 000.00";',
-'  tfR.position=[x0+797,-(1022)];tfR.textRange.characterAttributes.size=22;',
-'  try{tfR.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Light");}catch(e){}',
-'  tfR.textRange.characterAttributes.fillColor=GRAY;',
-'  var tfA=doc.textFrames.add();tfA.name="TXT_PRECIO_ANTES";tfA.contents="Precio antes: S/ 000.00";',
-'  tfA.position=[x0+797,-(1050)];tfA.textRange.characterAttributes.size=22;',
-'  try{tfA.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Light");}catch(e){}',
-'  tfA.textRange.characterAttributes.fillColor=GRAY;tfA.textRange.characterAttributes.strikeThrough=true;',
-'  var pG=doc.pathItems.rectangle(-(884),x0+649,54,121);pG.name="GRP_CMR";pG.filled=true;pG.fillColor=rgb(100,100,100);pG.stroked=false;',
-'}',
-'alert("MTLKILLERS creado! '+total+' mesas listas.");'
+'// Crear capa principal LIMA 1',
+'var mainLayer = doc.layers[0];',
+'mainLayer.name = "LIMA 1";',
+'',
+'// Fondo',
+'var bg=mainLayer.pathItems.rectangle(0,0,W,H);bg.filled=true;bg.fillColor=DARK;bg.stroked=false;bg.name="BG_CARD";',
+'',
+'// TXT_DESC',
+'var tfD=mainLayer.textFrames.add();tfD.name="TXT_DESC";tfD.contents="Nombre del producto";',
+'tfD.position=[216,-(935)];tfD.textRange.characterAttributes.size=31;',
+'try{tfD.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Regular");}catch(e){}',
+'tfD.textRange.characterAttributes.fillColor=WHITE;',
+'',
+'// TXT_SKU',
+'var tfS=mainLayer.textFrames.add();tfS.name="TXT_SKU";tfS.contents="SKU: 0000000";',
+'tfS.position=[290,-(1036)];tfS.textRange.characterAttributes.size=22;',
+'try{tfS.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Regular");}catch(e){}',
+'tfS.textRange.characterAttributes.fillColor=GRAY;',
+'',
+'// BG_PRECIO_CMR — rectangulo rojo',
+'var bgC=mainLayer.pathItems.roundedRectangle(-(892),824,281,107,10,10);',
+'bgC.name="BG_PRECIO_CMR";bgC.filled=true;bgC.fillColor=RED;bgC.stroked=false;',
+'',
+'// BG_PRECIO_REGULAR — rectangulo amarillo (oculto)',
+'var bgR=mainLayer.pathItems.roundedRectangle(-(892),824,281,107,10,10);',
+'bgR.name="BG_PRECIO_REGULAR";bgR.filled=true;bgR.fillColor=YELLOW;bgR.stroked=false;bgR.hidden=true;',
+'',
+'// TXT_PRECIO',
+'var tfP=mainLayer.textFrames.add();tfP.name="TXT_PRECIO";tfP.contents="000";',
+'tfP.position=[835,-(809)];tfP.textRange.characterAttributes.size=76;',
+'try{tfP.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Bold");}catch(e){}',
+'tfP.textRange.characterAttributes.fillColor=WHITE;',
+'',
+'// TXT_DECIMAL',
+'var tfDec=mainLayer.textFrames.add();tfDec.name="TXT_DECIMAL";tfDec.contents=".00";',
+'tfDec.position=[836,-(967)];tfDec.textRange.characterAttributes.size=23;',
+'try{tfDec.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Bold");}catch(e){}',
+'tfDec.textRange.characterAttributes.fillColor=WHITE;',
+'',
+'// TXT_PRECIO_REGULAR',
+'var tfR=mainLayer.textFrames.add();tfR.name="TXT_PRECIO_REGULAR";tfR.contents="Precio regular: S/ 000.00";',
+'tfR.position=[797,-(1022)];tfR.textRange.characterAttributes.size=22;',
+'try{tfR.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Light");}catch(e){}',
+'tfR.textRange.characterAttributes.fillColor=GRAY;',
+'',
+'// TXT_PRECIO_ANTES',
+'var tfA=mainLayer.textFrames.add();tfA.name="TXT_PRECIO_ANTES";tfA.contents="Precio antes: S/ 000.00";',
+'tfA.position=[797,-(1050)];tfA.textRange.characterAttributes.size=22;',
+'try{tfA.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Light");}catch(e){}',
+'tfA.textRange.characterAttributes.fillColor=GRAY;tfA.textRange.characterAttributes.strikeThrough=true;',
+'',
+'// GRP_CMR — placeholder para cards CMR/Debito',
+'var pG=mainLayer.pathItems.rectangle(-(884),649,54,121);',
+'pG.name="GRP_CMR";pG.filled=true;pG.fillColor=rgb(100,100,100);pG.stroked=false;',
+'',
+'alert("MTLKILLERS creado!\nMesa: LIMA 1\nCapas: TXT_DESC, TXT_SKU, TXT_PRECIO, TXT_DECIMAL, TXT_PRECIO_REGULAR, TXT_PRECIO_ANTES, BG_PRECIO_CMR, BG_PRECIO_REGULAR, GRP_CMR\n\nDuplica la mesa y la capa para crear LIMA 2, LIMA 3...");'
   ].join('\n');
   var blob=new Blob([jsx],{type:'text/plain'});
   var url=URL.createObjectURL(blob);
@@ -1138,6 +817,7 @@ window.addEventListener('load',function(){
 });
 addCard();addCard();addCard();
 log('MTLKILLERS V1 listo — pega URLs y extrae datos','ok');
+
 </script>
 </body>
 </html>
