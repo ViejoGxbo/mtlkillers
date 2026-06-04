@@ -991,7 +991,7 @@ function generateJsx(target){
 '\nvar exportDir=Folder.desktop+"/EXPORT_CARDS";\nvar ef=new Folder(exportDir);if(!ef.exists)ef.create();\n'+
 'function findLayer(name,layers){for(var i=0;i<layers.length;i++){if(layers[i].name===name)return layers[i];try{if(layers[i].layers&&layers[i].layers.length>0){var f=findLayer(name,layers[i].layers);if(f)return f;}}catch(e){}}return null;}\n'+
 'var doc;try{doc=app.activeDocument;}catch(e){alert("Abre tu PSD primero.");exit();}\n'+
-'var grouped={};for(var i=0;i<doc.layers.length;i++){var nm=doc.layers[i].name,nM=nm.match(/\\d+$/);if(!nM)continue;var n=parseInt(nM[0]);if(!grouped[n])grouped[n]=[];grouped[n].push(doc.layers[i]);}\n'+
+'var grouped={};for(var i=0;i<doc.layerSets.length;i++){var nm=doc.layerSets[i].name,nM=nm.match(/\\d+$/);if(!nM)continue;var n=parseInt(nM[0]);if(!grouped[n])grouped[n]=[];grouped[n].push(doc.layerSets[i]);}\n'+
 'var log=[];\nfor(var i=0;i<products.length;i++){\n  var d=products[i];\n  '+cmrC+
 '  var abs=grouped[i+1];if(!abs||!abs.length){log.push("Card #"+(i+1)+": sin artboard");continue;}\n'+
 '  for(var ai=0;ai<abs.length;ai++){\n    var ab=abs[ai],abN=ab.name.toUpperCase(),ll=ab.layers||doc.layers;\n    var isL=abN.indexOf("LIMA")>=0,isP=abN.indexOf("PROV")>=0;\n    var maps=[{name:"TXT_DESC",val:d.nombre},{name:"TXT_SKU",val:d.sku}];\n'+
