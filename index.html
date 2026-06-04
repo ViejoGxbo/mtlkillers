@@ -580,7 +580,7 @@ body{
     </div>
     <div class="prog"><div class="prog-fill" id="progFill"></div></div>
     <button class="btn-main" id="btnFetch" onclick="fetchAll()">EXTRAER DATOS</button>
-    <button class="btn-ghost" onclick="generateDocAI()">Crear documento base en Illustrator</button>
+    <div style="display:flex;gap:8px;margin-bottom:6px"><button class="btn-ghost" style="flex:1;margin:0" onclick="generateDocAI('ai')">Base Illustrator</button><button class="btn-ghost" style="flex:1;margin:0" onclick="generateDocAI('ps')">Base Photoshop</button></div>
 
     <!-- PREVIEW -->
     <div id="previewSection" style="display:none">
@@ -847,7 +847,7 @@ function parseProduct(html,url){
   buscar(data,0);
   if(!nombre){var sl='';try{sl=url.split('/articulo/')[1].split('/')[1]||''}catch(e){}nombre=sl.replace(/-/g,' ').replace(/\b\w/g,function(x){return x.toUpperCase()})||'Producto'}
   nombre=fixAccents(nombre);
-  var skuM=html.match(/C\u00f3d\.\s*tienda[:\s]*([\d]+)/i);
+  var skuM=html.match(/C\u00f3d\.\s*tienda[:\s]*([\w]+)/i);
   var sku=skuM?skuM[1]:'';
   if(!sku){var iM=html.match(/sodimacPE\/([0-9]+)[_\/]/i);if(iM)sku=iM[1]}
   if(!sku)sku='--';
@@ -1009,9 +1009,9 @@ function generateJsx(target){
 }
 
 /* ── DOC AI ───────────────────────────────────── */
-function generateDocAI(){
+function generateDocAI(target){
   var lines=[
-'#target illustrator','// MTLKILLERS - Crear documento base LIMA 1',
+'#target '+(target==="ps"?"photoshop":"illustrator"),'// MTLKILLERS - Crear documento base LIMA 1',
 'var W=1080,H=1080;','var doc=app.documents.add(DocumentColorSpace.RGB,W,H,1);',
 'doc.name="MTLKILLERS_BASE";','doc.artboards[0].name="LIMA 1";','doc.artboards[0].artboardRect=[0,0,W,-H];',
 'function rgb(r,g,b){var c=new RGBColor();c.red=r;c.green=g;c.blue=b;return c;}',
@@ -1032,7 +1032,7 @@ function generateDocAI(){
   ];
   var blob=new Blob([lines.join('\n')],{type:'text/plain'});
   var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');a.href=url;a.download='MTLKILLERS_crear_documento.jsx';a.click();URL.revokeObjectURL(url);
+  var a=document.createElement('a');a.href=url;a.download=(target==='ps'?'MTLKILLERS_base_photoshop.jsx':'MTLKILLERS_base_illustrator.jsx');a.click();URL.revokeObjectURL(url);
   log('Descargado: MTLKILLERS_crear_documento.jsx','ok');
 }
 
