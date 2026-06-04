@@ -659,11 +659,15 @@ function nombreValido(t) {
   return !basura.some(function(x){ return tl.includes(x); });
 }
 
-function splitPrice(fmt) {
-  if(!fmt) return {entero:'0', decimal:'.00'};
-  var parts = String(fmt).replace(/[S\/\s]/g,'').split(',');
-  var dec = parts[1] || '00';
-  return {entero: parts[0], decimal: '.' + dec};
+function splitPrice(num) {
+  // num es un numero float como 1299.90
+  if(!num && num !== 0) return {entero:'0', decimal:'.00'};
+  var fixed = parseFloat(num).toFixed(2);
+  var parts = fixed.split('.');
+  // Formatear entero con coma para miles: 1299 -> 1,299
+  var entero = parseInt(parts[0], 10).toLocaleString('es-PE').replace(/\./g, ',');
+  var decimal = '.' + (parts[1] || '00');
+  return {entero: entero, decimal: decimal};
 }
 
 function parseProduct(html, url) {
@@ -760,19 +764,35 @@ function parseProduct(html, url) {
   // ── PRECIO M2 ────────────────────────────────────────────
   var esM2 = nombre.toLowerCase().includes('m2') || nombre.toLowerCase().includes('m²');
   if(esM2) {
-    var encontradosM2 = [];
-    var rxM2 = /S\/\s*([\d.,]+)/gi;
-    var match;
-    while((match = rxM2.exec(html)) !== null) {
-      var bloque = html.substring(Math.max(0, match.index-150), match.index+150).toLowerCase();
-      var tieneBasura = ['ahorra','cmr','beneficio','descuento','cupón'].some(function(x){ return bloque.includes(x); });
-      var tieneM2 = bloque.includes('m²') || bloque.includes('m2') || bloque.includes('por m');
-      if(!tieneBasura && tieneM2) {
-        var n = parseFloat(match[1].replace(',','.'));
-        if(!isNaN(n) && n > 5 && n < 1000) encontradosM2.push(n);
+    // Buscar precios m2 directamente en el HTML con data-testid
+    var m2Prices = [];
+    var rxM2Val = /m2-price-value[^>]*>([\d.,]+)/gi;
+    var mM2;
+    while((mM2 = rxM2Val.exec(html)) !== null) {
+      var n = parseFloat(mM2[1].replace(',','.'));
+      if(!isNaN(n) && n > 1 && n < 10000) m2Prices.push(n);
+    }
+    // Fallback: buscar patron "por m²" en el HTML
+    if(!m2Prices.length) {
+      var rxM2b = /([\d.,]+)\s*(?:por\s*m²|por\s*m2|\/m²|\/m2)/gi;
+      var mM2b;
+      while((mM2b = rxM2b.exec(html)) !== null) {
+        var n2 = parseFloat(mM2b[1].replace(',','.'));
+        if(!isNaN(n2) && n2 > 1 && n2 < 10000) m2Prices.push(n2);
       }
     }
-    if(encontradosM2.length) precioRegular = Math.min.apply(null, encontradosM2);
+    if(m2Prices.length) {
+      m2Prices.sort(function(a,b){return a-b;});
+      // Si hay 2 precios m2: menor=CMR, mayor=regular
+      if(m2Prices.length >= 2) {
+        precioCMR     = m2Prices[0];
+        precioRegular = m2Prices[1];
+        precioAntes   = null;
+      } else {
+        precioRegular = m2Prices[0];
+        precioCMR     = null;
+      }
+    }
   }
 
   // ── DESCUENTO ────────────────────────────────────────────
@@ -785,15 +805,19 @@ function parseProduct(html, url) {
 
   // ── PRECIO PRINCIPAL ─────────────────────────────────────
   var principal = precioCMR || precioRegular || 0;
-  var principalStr = principal.toFixed(2);
-  var partes = principalStr.split('.');
-  var precioEntero  = partes[0];
-  var precioDecimal = '.' + (partes[1] || '00');
+  var sp = splitPrice(principal);
+  var precioEntero  = sp.entero;
+  var precioDecimal = sp.decimal;
 
-  var precioNormalStr = precioRegular ? precioRegular.toFixed(2) : '—';
-  var precioCmrStr    = precioCMR    ? precioCMR.toFixed(2)    : '—';
-  // Solo mostrar precioAntes si es diferente al precioNormal
-  var precioAntesStr  = (precioAntes && precioAntes !== precioRegular) ? precioAntes.toFixed(2) : '—';
+  function fmtPrecio(n) {
+    if(!n) return '—';
+    var f = n.toFixed(2).split('.');
+    var ent = parseInt(f[0],10).toLocaleString('es-PE').replace(/\./g,',');
+    return ent + '.' + (f[1]||'00');
+  }
+  var precioNormalStr = precioRegular ? fmtPrecio(precioRegular) : '—';
+  var precioCmrStr    = precioCMR    ? fmtPrecio(precioCMR)    : '—';
+  var precioAntesStr  = (precioAntes && precioAntes !== precioRegular) ? fmtPrecio(precioAntes) : '—';
 
   // ── STOCK ────────────────────────────────────────────────
   var stock = 'DESCONOCIDO';
