@@ -623,7 +623,20 @@ var TILDES = {
   'acustico':'acústico',
   'antipatic':'antideslizante',
   'inalambrico':'inalámbrico','inalambrica':'inalámbrica',
-  'portatil':'portátil','portatiles':'portátiles'
+  'portatil':'portátil','portatiles':'portátiles',
+  'plastico':'plástico','plastica':'plástica','plasticos':'plásticos','plasticas':'plásticas',
+  'elastico':'elástico','elastica':'elástica',
+  'fantastico':'fantástico',
+  'dramatico':'dramático',
+  'robotico':'robótico',
+  'simbolo':'símbolo',
+  'arbol':'árbol','arboles':'árboles',
+  'angulo':'ángulo','angulos':'ángulos',
+  'calculo':'cálculo',
+  'circulo':'círculo',
+  'modulo':'módulo','modulos':'módulos',
+  'capsule':'cápsula',
+  'valvula':'válvula','valvulas':'válvulas'
 };
 
 function corregirTildes(texto) {
@@ -775,11 +788,12 @@ function parseProduct(html, url) {
   var principalStr = principal.toFixed(2);
   var partes = principalStr.split('.');
   var precioEntero  = partes[0];
-  var precioDecimal = partes[1] || '00';
+  var precioDecimal = '.' + (partes[1] || '00');
 
   var precioNormalStr = precioRegular ? precioRegular.toFixed(2) : '—';
   var precioCmrStr    = precioCMR    ? precioCMR.toFixed(2)    : '—';
-  var precioAntesStr  = precioAntes  ? precioAntes.toFixed(2)  : '—';
+  // Solo mostrar precioAntes si es diferente al precioNormal
+  var precioAntesStr  = (precioAntes && precioAntes !== precioRegular) ? precioAntes.toFixed(2) : '—';
 
   // ── STOCK ────────────────────────────────────────────────
   var stock = 'DESCONOCIDO';
