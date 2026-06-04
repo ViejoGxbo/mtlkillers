@@ -857,9 +857,15 @@ function parseProduct(html,url){
     prices.forEach(function(p){
       var num=gn(p.price);if(!num)return;
       var t=(p.type||'').toLowerCase();
-      if(t==='cmrprice'||t==='offerprice'||t==='cardprice'){if(cmrVis){if(!pCMR)pCMR=num;}else{if(!pReg)pReg=num;}}
-      else if(t==='normalprice'||t==='regularprice'||t==='internetprice'||t==='eventprice'){if(!pReg)pReg=num;}
-      else if(t==='crossed'||p.crossed===true){if(!pAntes)pAntes=num;}
+      var isCrossed=p.crossed===true;
+      if(t==='cmrprice'||t==='offerprice'||t==='cardprice'){
+        if(cmrVis){if(!pCMR)pCMR=num;}else{if(!pReg)pReg=num;}
+      } else if(isCrossed){
+        // Precio tachado - puede ser normalPrice, regularPrice con crossed:true
+        if(!pAntes)pAntes=num;
+      } else if(t==='normalprice'||t==='regularprice'||t==='internetprice'||t==='eventprice'){
+        if(!pReg)pReg=num;
+      }
     });
     if(pCMR&&pReg&&pCMR===pReg)pReg=null;
   }catch(e){}
