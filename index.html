@@ -759,13 +759,17 @@ function renderPreviews(done){
     var hasCmr=d.precioCmr!='--'&&d.precioCmr!='';
     var hasAntes=d.precioAntes!='--'&&d.precioAntes!='';
     var pBlock='';
+    var m2label=d.esM2?'<div style="font-size:8px;color:var(--sub);letter-spacing:1px;text-align:right">por m²</div>':'';
+    var cajalabel=d.esM2?'<div style="font-size:8px;color:var(--muted);text-align:right">precio caja distinto</div>':'';
     if(hasCmr){
       pBlock='<div class="cmr-chip">CMR + Debito</div>'+
         '<div class="price-badge cmr"><span class="ps">S/</span><span class="pe">'+d.precioEntero+'</span><span class="pd">'+d.precioDecimal+'</span></div>'+
+        m2label+
         '<div class="price-reg">Regular: S/ '+d.precioNormal+'</div>'+
         (hasAntes?'<div class="price-antes">Antes: S/ '+d.precioAntes+'</div>':'');
     }else{
       pBlock='<div class="price-badge reg"><span class="ps">S/</span><span class="pe">'+d.precioEntero+'</span><span class="pd">'+d.precioDecimal+'</span></div>'+
+        m2label+
         (hasAntes?'<div class="price-antes">Antes: S/ '+d.precioAntes+'</div>':'');
     }
     var div=document.createElement('div');
@@ -876,7 +880,7 @@ function parseProduct(html,url){
   }catch(e){}
   var esM2=nombre.toLowerCase().includes('m2');
   if(esM2){
-    var m2P=[];var rxM=new RegExp('m2-price-value[^>]*>([\\d.,]+)','gi');var mM;
+    var m2P=[];var rxM=new RegExp('m2-price-value[^>]*>([0-9.,]+)','gi');var mM;
     while((mM=rxM.exec(html))!==null){var n2=parseFloat(mM[1].replace(',','.'));if(!isNaN(n2)&&n2>1)m2P.push(n2)}
     if(m2P.length){m2P.sort(function(a,b){return a-b});if(m2P.length>=2){pCMR=m2P[0];pReg=m2P[1];pAntes=null;}else{pReg=m2P[0];pCMR=null;}}
   }
@@ -1010,33 +1014,83 @@ function generateJsx(target){
 
 /* ── DOC AI ───────────────────────────────────── */
 function generateDocAI(target){
-  var lines=[
-'#target '+(target==="ps"?"photoshop":"illustrator"),'// MTLKILLERS - Crear documento base LIMA 1',
-'var W=1080,H=1080;','var doc=app.documents.add(DocumentColorSpace.RGB,W,H,1);',
-'doc.name="MTLKILLERS_BASE";','doc.artboards[0].name="LIMA 1";','doc.artboards[0].artboardRect=[0,0,W,-H];',
-'function rgb(r,g,b){var c=new RGBColor();c.red=r;c.green=g;c.blue=b;return c;}',
-'var WHITE=rgb(255,255,255),DARK=rgb(30,30,30),GRAY=rgb(180,180,180),RED=rgb(220,0,28),YELLOW=rgb(255,210,0);',
-'var lyr=doc.layers[0];lyr.name="LIMA 1";',
-'var bg=lyr.pathItems.rectangle(0,0,W,H);bg.filled=true;bg.fillColor=DARK;bg.stroked=false;bg.name="BG_CARD";',
-'var t;',
-'t=lyr.textFrames.add();t.name="TXT_DESC";t.contents="Nombre del producto";t.position=[216,-(935)];t.textRange.characterAttributes.size=31;try{t.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Regular");}catch(e){}t.textRange.characterAttributes.fillColor=WHITE;',
-'t=lyr.textFrames.add();t.name="TXT_SKU";t.contents="SKU: 0000000";t.position=[290,-(1036)];t.textRange.characterAttributes.size=22;try{t.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Regular");}catch(e){}t.textRange.characterAttributes.fillColor=GRAY;',
-'var bgC=lyr.pathItems.roundedRectangle(-(892),824,281,107,10,10);bgC.name="BG_PRECIO_CMR";bgC.filled=true;bgC.fillColor=RED;bgC.stroked=false;',
-'var bgR=lyr.pathItems.roundedRectangle(-(892),824,281,107,10,10);bgR.name="BG_PRECIO_REGULAR";bgR.filled=true;bgR.fillColor=YELLOW;bgR.stroked=false;bgR.hidden=true;',
-'t=lyr.textFrames.add();t.name="TXT_PRECIO";t.contents="000";t.position=[835,-(809)];t.textRange.characterAttributes.size=76;try{t.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Bold");}catch(e){}t.textRange.characterAttributes.fillColor=WHITE;',
-'t=lyr.textFrames.add();t.name="TXT_DECIMAL";t.contents=".00";t.position=[836,-(967)];t.textRange.characterAttributes.size=23;try{t.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Bold");}catch(e){}t.textRange.characterAttributes.fillColor=WHITE;',
-'t=lyr.textFrames.add();t.name="TXT_PRECIO_REGULAR";t.contents="Precio regular: S/ 000.00";t.position=[797,-(1022)];t.textRange.characterAttributes.size=22;try{t.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Light");}catch(e){}t.textRange.characterAttributes.fillColor=GRAY;',
-'t=lyr.textFrames.add();t.name="TXT_PRECIO_ANTES";t.contents="Precio antes: S/ 000.00";t.position=[797,-(1050)];t.textRange.characterAttributes.size=22;try{t.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Light");}catch(e){}t.textRange.characterAttributes.fillColor=GRAY;t.textRange.characterAttributes.strikeThrough=true;',
-'var pG=lyr.pathItems.rectangle(-(884),649,54,121);pG.name="GRP_CMR";pG.filled=true;pG.fillColor=rgb(100,100,100);pG.stroked=false;',
-'alert("Creado! Mesa: LIMA 1\\nCapas: TXT_DESC, TXT_SKU, TXT_PRECIO, TXT_DECIMAL, TXT_PRECIO_REGULAR, TXT_PRECIO_ANTES, BG_PRECIO_CMR, BG_PRECIO_REGULAR, GRP_CMR\\n\\nDuplica la mesa y capa para LIMA 2, PROV 1...");'
-  ];
-  var blob=new Blob([lines.join('\n')],{type:'text/plain'});
+  var isPS = target === 'ps';
+  var layerCode = [
+    'var lyr = isPS ? doc.artLayers[0] : doc.layers[0];',
+    'lyr.name = "LIMA 1";',
+    'function rgb(r,g,b){var c=new RGBColor();c.red=r;c.green=g;c.blue=b;return c;}',
+    'var WHITE=rgb(255,255,255),DARK=rgb(30,30,30),GRAY=rgb(180,180,180),RED=rgb(220,0,28),YELLOW=rgb(255,210,0);',
+  ].join('\n');
+
+  var psJsx = [
+    '#target photoshop',
+    '// MTLKILLERS V1 - Crear documento base PS',
+    'var W=1080,H=1080;',
+    'var opts = new DocumentCreationOptions();',
+    'opts.width = new UnitValue(W, "px");',
+    'opts.height = new UnitValue(H, "px");',
+    'opts.resolution = 72;',
+    'opts.mode = NewDocumentMode.RGB;',
+    'var doc = app.documents.add(opts);',
+    'doc.name = "MTLKILLERS_BASE";',
+    'function rgb(r,g,b){var c=new SolidColor();c.rgb.red=r;c.rgb.green=g;c.rgb.blue=b;return c;}',
+    'var WHITE=rgb(255,255,255),DARK=rgb(30,30,30),GRAY=rgb(180,180,180),RED=rgb(220,0,28),YELLOW=rgb(255,210,0);',
+    'var lyr=doc.layers[0];lyr.name="LIMA 1";',
+    'function addText(name,txt,x,y,size,color){',
+    '  var l=doc.artLayers.add();l.kind=LayerKind.TEXT;l.name=name;',
+    '  var t=l.textItem;t.contents=txt;t.position=[new UnitValue(x,"px"),new UnitValue(y,"px")];',
+    '  t.size=new UnitValue(size,"pt");t.color=color;',
+    '}',
+    'addText("TXT_DESC","Nombre del producto",216,935,31,WHITE);',
+    'addText("TXT_SKU","SKU: 0000000",290,1036,22,GRAY);',
+    'addText("TXT_PRECIO","000",835,809,76,WHITE);',
+    'addText("TXT_DECIMAL",".00",836,967,23,WHITE);',
+    'addText("TXT_PRECIO_REGULAR","Precio regular: S/ 000.00",797,1022,22,GRAY);',
+    'addText("TXT_PRECIO_ANTES","Precio antes: S/ 000.00",797,1050,22,GRAY);',
+    'function addRect(name,x,y,w,h,color){',
+    '  doc.selection.select([[x,y],[x+w,y],[x+w,y+h],[x,y+h]]);',
+    '  doc.selection.fill(color);doc.selection.deselect();',
+    '  doc.activeLayer.name=name;',
+    '}',
+    'addRect("BG_PRECIO_CMR",824,892,281,107,RED);',
+    'addRect("BG_PRECIO_REGULAR",824,892,281,107,YELLOW);',
+    'addRect("GRP_CMR",649,884,54,121,rgb(100,100,100));',
+    'alert("MTLKILLERS PS creado!\nCapas: TXT_DESC, TXT_SKU, TXT_PRECIO, TXT_DECIMAL, TXT_PRECIO_REGULAR, TXT_PRECIO_ANTES, BG_PRECIO_CMR, BG_PRECIO_REGULAR, GRP_CMR");'
+  ].join('\n');
+
+  var aiJsx = [
+    '#target illustrator',
+    '// MTLKILLERS V1 - Crear documento base AI',
+    'var W=1080,H=1080;',
+    'var doc=app.documents.add(DocumentColorSpace.RGB,W,H,1);',
+    'doc.name="MTLKILLERS_BASE";',
+    'doc.artboards[0].name="LIMA 1";',
+    'doc.artboards[0].artboardRect=[0,0,W,-H];',
+    'function rgb(r,g,b){var c=new RGBColor();c.red=r;c.green=g;c.blue=b;return c;}',
+    'var WHITE=rgb(255,255,255),DARK=rgb(30,30,30),GRAY=rgb(180,180,180),RED=rgb(220,0,28),YELLOW=rgb(255,210,0);',
+    'var lyr=doc.layers[0];lyr.name="LIMA 1";',
+    'var bg=lyr.pathItems.rectangle(0,0,W,H);bg.filled=true;bg.fillColor=DARK;bg.stroked=false;bg.name="BG_CARD";',
+    'var t;',
+    't=lyr.textFrames.add();t.name="TXT_DESC";t.contents="Nombre del producto";t.position=[216,-(935)];t.textRange.characterAttributes.size=31;try{t.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Regular");}catch(e){}t.textRange.characterAttributes.fillColor=WHITE;',
+    't=lyr.textFrames.add();t.name="TXT_SKU";t.contents="SKU: 0000000";t.position=[290,-(1036)];t.textRange.characterAttributes.size=22;try{t.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Regular");}catch(e){}t.textRange.characterAttributes.fillColor=GRAY;',
+    'var bgC=lyr.pathItems.roundedRectangle(-(892),824,281,107,10,10);bgC.name="BG_PRECIO_CMR";bgC.filled=true;bgC.fillColor=RED;bgC.stroked=false;',
+    'var bgR=lyr.pathItems.roundedRectangle(-(892),824,281,107,10,10);bgR.name="BG_PRECIO_REGULAR";bgR.filled=true;bgR.fillColor=YELLOW;bgR.stroked=false;bgR.hidden=true;',
+    't=lyr.textFrames.add();t.name="TXT_PRECIO";t.contents="000";t.position=[835,-(809)];t.textRange.characterAttributes.size=76;try{t.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Bold");}catch(e){}t.textRange.characterAttributes.fillColor=WHITE;',
+    't=lyr.textFrames.add();t.name="TXT_DECIMAL";t.contents=".00";t.position=[836,-(967)];t.textRange.characterAttributes.size=23;try{t.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Bold");}catch(e){}t.textRange.characterAttributes.fillColor=WHITE;',
+    't=lyr.textFrames.add();t.name="TXT_PRECIO_REGULAR";t.contents="Precio regular: S/ 000.00";t.position=[797,-(1022)];t.textRange.characterAttributes.size=22;try{t.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Light");}catch(e){}t.textRange.characterAttributes.fillColor=GRAY;',
+    't=lyr.textFrames.add();t.name="TXT_PRECIO_ANTES";t.contents="Precio antes: S/ 000.00";t.position=[797,-(1050)];t.textRange.characterAttributes.size=22;try{t.textRange.characterAttributes.textFont=app.textFonts.getByName("PFBeauSansPro-Light");}catch(e){}t.textRange.characterAttributes.fillColor=GRAY;t.textRange.characterAttributes.strikeThrough=true;',
+    'var pG=lyr.pathItems.rectangle(-(884),649,54,121);pG.name="GRP_CMR";pG.filled=true;pG.fillColor=rgb(100,100,100);pG.stroked=false;',
+    'alert("MTLKILLERS AI creado!\nMesa: LIMA 1\nCapas: TXT_DESC, TXT_SKU, TXT_PRECIO, TXT_DECIMAL, TXT_PRECIO_REGULAR, TXT_PRECIO_ANTES, BG_PRECIO_CMR, BG_PRECIO_REGULAR, GRP_CMR\n\nDuplica la mesa y capa para LIMA 2, PROV 1...");'
+  ].join('\n');
+
+  var jsx = isPS ? psJsx : aiJsx;
+  var fn = isPS ? 'MTLKILLERS_base_photoshop.jsx' : 'MTLKILLERS_base_illustrator.jsx';
+  var blob=new Blob([jsx],{type:'text/plain'});
   var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');a.href=url;a.download=(target==='ps'?'MTLKILLERS_base_photoshop.jsx':'MTLKILLERS_base_illustrator.jsx');a.click();URL.revokeObjectURL(url);
-  log('Descargado: MTLKILLERS_crear_documento.jsx','ok');
+  var a=document.createElement('a');a.href=url;a.download=fn;a.click();URL.revokeObjectURL(url);
+  log('Descargado: '+fn,'ok');
 }
 
-/* ── EXT UI ───────────────────────────────────── */
 function downloadExtension(){var a=document.createElement('a');a.href='https://viejogxbo.github.io/mtlkillers/MTLKILLERS_EXT.zip';a.download='MTLKILLERS_EXT.zip';a.click();log('Descargando extension...','info')}
 function connectExtension(){
   var id=document.getElementById('extIdInput').value.trim();
