@@ -811,24 +811,34 @@ function parseProduct(html,url){
 
   // ── PRECIOS desde __NEXT_DATA__ ──
   var precioCMR=null,precioRegular=null,precioAntes=null;
-  // Verificar si Sodimac muestra el CMR visualmente (shade-red-text en el HTML)
-  var cmrVisible = html.includes('shade-red-text');
-
   try{
     var v0=data.props.pageProps.productData.variants[0];
     var prices=v0.prices||[];
+
+    // Detectar si hay CMR visible: buscar badge en __NEXT_DATA__ o en HTML
+    // En el JSON de Sodimac, si hay cmrPrice Y normalPrice distintos = CMR visible
+    var hasCmrType = prices.some(function(p){ return (p.type||'').toLowerCase()==='cmrprice' || (p.type||'').toLowerCase()==='offerprice'; });
+    var hasNormalType = prices.some(function(p){ var t=(p.type||'').toLowerCase(); return t==='normalprice'||t==='regularprice'||t==='internetprice'; });
+    // CMR visible solo cuando Sodimac tiene AMBOS: un precio CMR Y un precio normal distintos
+    var cmrVisible = hasCmrType && hasNormalType;
+    // También verificar en HTML por si acaso
+    if(!cmrVisible) cmrVisible = html.includes('shade-red-text');
+
     prices.forEach(function(p){
       var num=getNum(p.price);
       if(!num)return;
       var t=(p.type||'').toLowerCase();
       if(t==='cmrprice'||t==='offerprice'||t==='cardprice'){
-        // Solo usar CMR si Sodimac lo muestra visualmente en rojo
-        if(!precioCMR && cmrVisible) precioCMR=num;
-        else if(!precioRegular && !cmrVisible) precioRegular=num;
+        if(cmrVisible){ if(!precioCMR) precioCMR=num; }
+        else { if(!precioRegular) precioRegular=num; }
       }
       else if(t==='normalprice'||t==='regularprice'||t==='internetprice'||t==='eventprice'){if(!precioRegular)precioRegular=num;}
       else if(t==='crossed'||p.crossed===true){if(!precioAntes)precioAntes=num;}
     });
+
+    // Limpiar: si CMR === regular, no tiene sentido mostrar regular
+    if(precioCMR && precioRegular && precioCMR === precioRegular) precioRegular=null;
+
   }catch(e){
     // Fallback CSS classes
     var rxC=html.match(/shade-red-text[^>]*price-value[^>]*>([\d.,]+)|price-value[^>]*shade-red-text[^>]*>([\d.,]+)/i);
