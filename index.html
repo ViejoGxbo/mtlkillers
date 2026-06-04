@@ -933,10 +933,11 @@ async function scrapeWithExt(url){
       if(chrome.runtime.lastError)return reject(new Error(chrome.runtime.lastError.message));
       if(!r||!r.success)return reject(new Error(r?r.error:'Sin respuesta'));
       try{
-        var cmrClass=r.cmrVisible?'<div class="shade-red-text"></div>':'';
-        var m2Tag=r.m2Prices&&r.m2Prices.length?'<div id="m2prices" data-prices="'+r.m2Prices.join(',')+'"></div>':'';
-        var skuTag=r.sku?'<div id="extsku" data-sku="'+r.sku+'"></div>':'';
-        var fk=cmrClass+m2Tag+skuTag+'<sc'+'ript id="__NEXT_DATA__">'+r.nextData+'</'+'script>';
+        var cmrClass  = r.cmrVisible ? '<div class="shade-red-text"></div>' : '';
+        var m2Tag     = r.m2Prices && r.m2Prices.length ? '<div id="m2prices" data-prices="'+r.m2Prices.join(',')+'"></div>' : '';
+        var skuTag    = r.sku ? '<div id="extsku" data-sku="'+r.sku+'"></div>' : '';
+        var antesTag  = r.precioAntes ? '<div id="extantes" data-antes="'+r.precioAntes+'"></div>' : '';
+        var fk = cmrClass+m2Tag+skuTag+antesTag+'<sc'+'ript id="__NEXT_DATA__">'+r.nextData+'</'+'script>';
         resolve(parseProduct(fk,url));
       }catch(e){reject(e)}
     });
