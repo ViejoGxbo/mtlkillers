@@ -848,9 +848,7 @@ function parseProduct(html,url){
   buscar(data,0);
   if(!nombre){var sl='';try{sl=url.split('/articulo/')[1].split('/')[1]||''}catch(e){}nombre=sl.replace(/-/g,' ').replace(/\b\w/g,function(x){return x.toUpperCase()})||'Producto'}
   nombre=fixAccents(nombre);
-  var skuM=html.match(/[Cc].d\. *tienda[:\s]*([\w]+)/i);var sku=skuM?skuM[1]:'';
-  if(!sku){var iM=html.match(/sodimacPE\/([0-9]+)[_\/]/i);if(iM)sku=iM[1]}
-  if(!sku)sku='--';
+  var extSkuEl=html.match(/id="extsku" data-sku="([^"]+)"/);var sku=extSkuEl?extSkuEl[1]:'';if(!sku){try{sku=data.props.pageProps.productData.variants[0].offerings[0].sellerSkuId||'';}catch(e){}}if(!sku){var skuM=html.match(/[Cc].d\. *tienda[:\s]*([\w]+)/i);if(skuM)sku=skuM[1];}if(!sku){var iM=html.match(/sodimacPE\/([\w]+)[_\/]/i);if(iM)sku=iM[1]}if(!sku)sku='--';
   var pCMR=null,pReg=null,pAntes=null;
   try{
     var v0=data.props.pageProps.productData.variants[0];
