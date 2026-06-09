@@ -980,44 +980,135 @@ async function fetchAll(){
 function generateJsx(target){
   var done=cards.filter(function(c){return c.status==='done'&&c.data});
   if(!done.length){log('No hay productos listos','warn');return}
+
   function e2(s){return String(s||'').replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,' ').replace(/\r/g,'')}
-  var vc='var products = [];\n';
+
+  var vc='var products=[];\n';
   done.forEach(function(card,i){
     var d=card.data;
-    vc+='products['+i+']={nombre:"'+e2(d.nombre)+'",sku:"'+e2(d.sku)+'",marca:"'+e2(d.marca)+'",precioEntero:"'+e2(d.precioEntero)+'",precioDecimal:"'+e2(d.precioDecimal)+'",precioNormal:"'+e2(d.precioNormal)+'",precioCmr:"'+e2(d.precioCmr)+'",precioAntes:"'+e2(d.precioAntes)+'",stock:"'+e2(d.stock)+'"}\n;';
+    vc+='products['+i+']={nombre:"'+e2(d.nombre)+'",sku:"'+e2(d.sku)+'",marca:"'+e2(d.marca)+'",'+
+      'precioEntero:"'+e2(d.precioEntero)+'",precioDecimal:"'+e2(d.precioDecimal)+'",'+
+      'precioNormal:"'+e2(d.precioNormal)+'",precioCmr:"'+e2(d.precioCmr)+'",'+
+      'precioAntes:"'+e2(d.precioAntes)+'",stock:"'+e2(d.stock)+'"}\n;';
   });
+
   var cmrC='var hasCmr=d.precioCmr!="--"&&d.precioCmr!="";\nvar hasAntes=d.precioAntes!="--"&&d.precioAntes!="";\n';
+
   var jsx='';
+
   if(target==='ps'){
-    jsx='#target photoshop\n// MTLKILLERS V1\n\n'+vc+
-'\nvar exportDir=Folder.desktop+"/EXPORT_CARDS";\nvar ef=new Folder(exportDir);if(!ef.exists)ef.create();\n'+
-'function findLayer(name,layers){for(var i=0;i<layers.length;i++){if(layers[i].name===name)return layers[i];try{if(layers[i].layers&&layers[i].layers.length>0){var f=findLayer(name,layers[i].layers);if(f)return f;}}catch(e){}}return null;}\n'+
-'var doc;try{doc=app.activeDocument;}catch(e){alert("Abre tu PSD primero.");exit();}\n'+
-'var grouped={};for(var i=0;i<doc.layerSets.length;i++){var nm=doc.layerSets[i].name,nM=nm.match(/\\d+$/);if(!nM)continue;var n=parseInt(nM[0]);if(!grouped[n])grouped[n]=[];grouped[n].push(doc.layerSets[i]);}\n'+
-'var log=[];\nfor(var i=0;i<products.length;i++){\n  var d=products[i];\n  '+cmrC+
-'  var abs=grouped[i+1];if(!abs||!abs.length){log.push("Card #"+(i+1)+": sin artboard");continue;}\n'+
-'  for(var ai=0;ai<abs.length;ai++){\n    var ab=abs[ai],abN=ab.name.toUpperCase(),ll=ab.layers||doc.layers;\n    var isL=abN.indexOf("LIMA")>=0,isP=abN.indexOf("PROV")>=0;\n    var maps=[{name:"TXT_DESC",val:d.nombre},{name:"TXT_SKU",val:d.sku}];\n'+
-'    if(isL||(!isL&&!isP)){\n      maps.push({name:"TXT_PRECIO",val:d.precioEntero});maps.push({name:"TXT_DECIMAL",val:d.precioDecimal});\n      maps.push({name:"TXT_PRECIO_REGULAR",val:hasCmr?d.precioNormal:""});maps.push({name:"TXT_PRECIO_ANTES",val:hasAntes?d.precioAntes:""});\n    }\n'+
-'    for(var j=0;j<maps.length;j++){if(!maps[j].val)continue;var l=findLayer(maps[j].name,ll);if(l)try{l.textItem.contents=String(maps[j].val)}catch(e){}}\n    log.push("["+ab.name+"] ["+d.sku+"] OK");\n  }\n'+
-+'\nalert("MTLKILLERS PS completado!\\n\\nCapas llenadas. Exporta cuando quieras.");\n';
+    jsx=[
+      '#target photoshop',
+      '// MTLKILLERS V1 - Photoshop',
+      '',
+      vc,
+      'function findLayer(name,container){',
+      '  var layers=container.artLayers||[];',
+      '  for(var i=0;i<layers.length;i++){if(layers[i].name===name)return layers[i];}',
+      '  var sets=container.layerSets||[];',
+      '  for(var i=0;i<sets.length;i++){',
+      '    if(sets[i].name===name)return sets[i];',
+      '    var f=findLayer(name,sets[i]);if(f)return f;',
+      '  }',
+      '  return null;',
+      '}',
+      'var doc;try{doc=app.activeDocument;}catch(e){alert("Abre tu PSD primero.");exit();}',
+      'var grouped={};',
+      'for(var i=0;i<doc.layerSets.length;i++){',
+      '  var nm=doc.layerSets[i].name,nM=nm.match(/\\d+$/);',
+      '  if(!nM)continue;',
+      '  var n=parseInt(nM[0]);',
+      '  if(!grouped[n])grouped[n]=[];',
+      '  grouped[n].push(doc.layerSets[i]);',
+      '}',
+      'var log=[];',
+      'for(var i=0;i<products.length;i++){',
+      '  var d=products[i];',
+      '  '+cmrC,
+      '  var grps=grouped[i+1];',
+      '  if(!grps||!grps.length){log.push("Card #"+(i+1)+": sin grupo");continue;}',
+      '  for(var gi=0;gi<grps.length;gi++){',
+      '    var grp=grps[gi],gN=grp.name.toUpperCase();',
+      '    var isL=gN.indexOf("LIMA")>=0,isP=gN.indexOf("PROV")>=0;',
+      '    var maps=[{name:"TXT_DESC",val:d.nombre},{name:"TXT_SKU",val:d.sku}];',
+      '    if(isL||(!isL&&!isP)){',
+      '      maps.push({name:"TXT_PRECIO",val:d.precioEntero});',
+      '      maps.push({name:"TXT_DECIMAL",val:d.precioDecimal});',
+      '      maps.push({name:"TXT_PRECIO_REGULAR",val:hasCmr?d.precioNormal:""});',
+      '      maps.push({name:"TXT_PRECIO_ANTES",val:hasAntes?d.precioAntes:""});',
+      '    }',
+      '    for(var j=0;j<maps.length;j++){',
+      '      if(!maps[j].val)continue;',
+      '      var l=findLayer(maps[j].name,grp);',
+      '      if(l)try{l.textItem.contents=String(maps[j].val);}catch(e){}',
+      '    }',
+      '    log.push("["+grp.name+"] ["+d.sku+"] OK");',
+      '  }',
+      '}',
+      'alert("MTLKILLERS PS!\\n\\n"+log.join("\\n")+"\\n\\nCapas llenadas. Exporta manualmente cuando quieras.");'
+    ].join('\n');
 
   }else{
-    jsx='#target illustrator\n// MTLKILLERS V1\n\n'+vc+
-'\nvar exportDir=Folder.desktop+"/EXPORT_CARDS";\nvar ef=new Folder(exportDir);if(!ef.exists)ef.create();\n'+
-'function findTF(name,layer){try{for(var i=0;i<layer.textFrames.length;i++){if(layer.textFrames[i].name===name)return layer.textFrames[i];}}catch(e){}return null;}\n'+
-'var doc;try{doc=app.activeDocument;}catch(e){alert("Abre tu .ai primero.");exit();}\n'+
-'var grouped={};for(var i=0;i<doc.layers.length;i++){var nm=doc.layers[i].name,nM=nm.match(/\\d+$/);if(!nM)continue;var n=parseInt(nM[0]);if(!grouped[n])grouped[n]=[];grouped[n].push(doc.layers[i]);}\n'+
-'var log=[];\nfor(var i=0;i<products.length;i++){\n  var d=products[i];\n  '+cmrC+
-'  var group=grouped[i+1];if(!group||!group.length){log.push("Card #"+(i+1)+": sin capa");continue;}\n'+
-'  for(var ai=0;ai<group.length;ai++){\n    var lyr=group[ai],lN=lyr.name.toUpperCase();\n    var isL=lN.indexOf("LIMA")>=0,isP=lN.indexOf("PROV")>=0;\n    var maps=[{name:"TXT_DESC",val:d.nombre},{name:"TXT_SKU",val:d.sku}];\n'+
-'    if(isL||(!isL&&!isP)){\n      maps.push({name:"TXT_PRECIO",val:d.precioEntero});maps.push({name:"TXT_DECIMAL",val:d.precioDecimal});\n      maps.push({name:"TXT_PRECIO_REGULAR",val:hasCmr?d.precioNormal:""});maps.push({name:"TXT_PRECIO_ANTES",val:hasAntes?d.precioAntes:""});\n    }\n'+
-'    var ok=[],miss=[];\n    for(var j=0;j<maps.length;j++){if(!maps[j].val)continue;var tf=findTF(maps[j].name,lyr);if(tf){try{tf.contents=String(maps[j].val);ok.push(maps[j].name);}catch(e){miss.push(maps[j].name);}}else{miss.push(maps[j].name);}}\n'+
-'    function sv(name,show,l){try{var tfs=l.textFrames;for(var x=0;x<tfs.length;x++){if(tfs[x].name===name)tfs[x].hidden=!show;}}catch(e){}try{var pi=l.pathItems;for(var x=0;x<pi.length;x++){if(pi[x].name===name)pi[x].hidden=!show;}}catch(e){}try{var gi=l.groupItems;for(var x=0;x<gi.length;x++){if(gi[x].name===name)gi[x].hidden=!show;}}catch(e){}}\n'+
-'    sv("BG_PRECIO_CMR",hasCmr,lyr);sv("GRP_CMR",hasCmr,lyr);sv("BG_PRECIO_REGULAR",!hasCmr,lyr);sv("TXT_PRECIO_REGULAR",hasCmr,lyr);sv("TXT_PRECIO_ANTES",hasAntes,lyr);sv("Precio antes: S/",hasAntes,lyr);sv("Precio regular:",hasCmr,lyr);\n'+
-'    log.push("["+lyr.name+"] ["+d.sku+"] OK | "+ok.length+" capas"+(miss.length?" | Sin: "+miss.join(","):""));\n  }\n'+
-+'\nalert("MTLKILLERS AI completado!\\n\\nCapas llenadas. Exporta cuando quieras.");\n';
-
+    jsx=[
+      '#target illustrator',
+      '// MTLKILLERS V1 - Illustrator',
+      '',
+      vc,
+      'function findTF(name,layer){',
+      '  try{for(var i=0;i<layer.textFrames.length;i++){if(layer.textFrames[i].name===name)return layer.textFrames[i];}}catch(e){}',
+      '  return null;',
+      '}',
+      'var doc;try{doc=app.activeDocument;}catch(e){alert("Abre tu .ai primero.");exit();}',
+      'var grouped={};',
+      'for(var i=0;i<doc.layers.length;i++){',
+      '  var nm=doc.layers[i].name,nM=nm.match(/\\d+$/);',
+      '  if(!nM)continue;',
+      '  var n=parseInt(nM[0]);',
+      '  if(!grouped[n])grouped[n]=[];',
+      '  grouped[n].push(doc.layers[i]);',
+      '}',
+      'var log=[];',
+      'for(var i=0;i<products.length;i++){',
+      '  var d=products[i];',
+      '  '+cmrC,
+      '  var group=grouped[i+1];',
+      '  if(!group||!group.length){log.push("Card #"+(i+1)+": sin capa");continue;}',
+      '  for(var ai=0;ai<group.length;ai++){',
+      '    var lyr=group[ai],lN=lyr.name.toUpperCase();',
+      '    var isL=lN.indexOf("LIMA")>=0,isP=lN.indexOf("PROV")>=0;',
+      '    var maps=[{name:"TXT_DESC",val:d.nombre},{name:"TXT_SKU",val:d.sku}];',
+      '    if(isL||(!isL&&!isP)){',
+      '      maps.push({name:"TXT_PRECIO",val:d.precioEntero});',
+      '      maps.push({name:"TXT_DECIMAL",val:d.precioDecimal});',
+      '      maps.push({name:"TXT_PRECIO_REGULAR",val:hasCmr?d.precioNormal:""});',
+      '      maps.push({name:"TXT_PRECIO_ANTES",val:hasAntes?d.precioAntes:""});',
+      '    }',
+      '    var ok=[],miss=[];',
+      '    for(var j=0;j<maps.length;j++){',
+      '      if(!maps[j].val)continue;',
+      '      var tf=findTF(maps[j].name,lyr);',
+      '      if(tf){try{tf.contents=String(maps[j].val);ok.push(maps[j].name);}catch(e){miss.push(maps[j].name);}}',
+      '      else{miss.push(maps[j].name);}',
+      '    }',
+      '    function sv(name,show,l){',
+      '      try{var tfs=l.textFrames;for(var x=0;x<tfs.length;x++){if(tfs[x].name===name)tfs[x].hidden=!show;}}catch(e){}',
+      '      try{var pi=l.pathItems;for(var x=0;x<pi.length;x++){if(pi[x].name===name)pi[x].hidden=!show;}}catch(e){}',
+      '      try{var gi=l.groupItems;for(var x=0;x<gi.length;x++){if(gi[x].name===name)gi[x].hidden=!show;}}catch(e){}',
+      '    }',
+      '    sv("BG_PRECIO_CMR",hasCmr,lyr);',
+      '    sv("GRP_CMR",hasCmr,lyr);',
+      '    sv("BG_PRECIO_REGULAR",!hasCmr,lyr);',
+      '    sv("TXT_PRECIO_REGULAR",hasCmr,lyr);',
+      '    sv("TXT_PRECIO_ANTES",hasAntes,lyr);',
+      '    sv("Precio antes: S/",hasAntes,lyr);',
+      '    sv("Precio regular:",hasCmr,lyr);',
+      '    log.push("["+lyr.name+"] ["+d.sku+"] OK | "+ok.length+" capas"+(miss.length?" | Sin: "+miss.join(","):""));',
+      '  }',
+      '}',
+      'alert("MTLKILLERS AI!\\n\\n"+log.join("\\n")+"\\n\\nCapas llenadas. Exporta manualmente cuando quieras.");'
+    ].join('\n');
   }
+
   var fn=target==='ps'?'mtlkillers_photoshop.jsx':'mtlkillers_illustrator.jsx';
   var blob=new Blob([jsx],{type:'text/plain'});
   var url=URL.createObjectURL(blob);
@@ -1025,7 +1116,6 @@ function generateJsx(target){
   log('Descargado: '+fn,'ok');
 }
 
-/* ── DOC AI ───────────────────────────────────── */
 function generateDocAI(target){
   var isPS=target==='ps';
 
