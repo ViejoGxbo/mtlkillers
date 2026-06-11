@@ -639,6 +639,8 @@ async function fetchOne(id){
   var urlEl=document.getElementById('ui-'+id);
   var url=(urlEl?urlEl.value:card.url).trim();
   if(!url){log('Card #'+id+': sin URL','warn');return}
+  // Limpiar URL de parametros innecesarios
+  url=url.split('?')[0];
   card.url=url;setCardSt(card,'loading');setCardInfo(card,'Extrayendo...');
   try{
     var data=await scrapeUrl(url);
