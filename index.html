@@ -614,8 +614,14 @@ async function checkExt(id){
   });
 }
 async function scrapeWithExt(url){
+  // Ping para despertar el service worker antes del scrape
+  await checkExt(EXT_ID);
   return new Promise(function(resolve,reject){
+    var timeout=setTimeout(function(){
+      reject(new Error('Timeout de extension (20s)'));
+    },20000);
     chrome.runtime.sendMessage(EXT_ID,{action:'scrape',url:url},function(r){
+      clearTimeout(timeout);
       if(chrome.runtime.lastError)return reject(new Error(chrome.runtime.lastError.message));
       if(!r||!r.success)return reject(new Error(r?r.error:'Sin respuesta'));
       try{
