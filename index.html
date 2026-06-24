@@ -169,6 +169,17 @@ body{
 .ext-id-row{display:flex;flex-direction:column;gap:12px}
 .ext-id-input{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:12px;border-radius:var(--radius);outline:none;transition:all 0.2s;}
 .ext-id-input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(249,115,22,0.2)}
+.ext-id-input:focus{outline:none;border-color:var(--accent);background:rgba(255,107,0,0.1)}
+.qa-zone { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border); }
+.qa-drop { border: 2px dashed var(--border); border-radius: 8px; padding: 32px; text-align: center; color: var(--muted); font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; background: rgba(0,0,0,0.2); }
+.qa-drop:hover, .qa-drop.dragover { border-color: var(--accent); color: var(--accent); background: rgba(255,107,0,0.05); }
+.qa-results { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+.qa-item { display: flex; align-items: center; justify-content: space-between; background: var(--bg-dark); padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--border); font-size: 13px; }
+.qa-item.pass { border-left-color: #2e7d32; }
+.qa-item.fail { border-left-color: #d32f2f; }
+.qa-tag { padding: 4px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
+.qa-tag.pass { background: rgba(46,125,50,0.15); color: #4caf50; }
+.qa-tag.fail { background: rgba(211,47,47,0.15); color: #f44336; }
 
 .jsx-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
 .btn-jsx{background:linear-gradient(145deg,var(--bg2),var(--bg1));border:1px solid var(--line);color:var(--text);border-radius:var(--radius-lg);padding:24px 16px;font-family:var(--mono);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;letter-spacing:0.5px;text-align:center;box-shadow:var(--shadow);}
@@ -206,8 +217,8 @@ body{
 .ll-info{color:var(--blue)}
 .ll-def{color:var(--muted)}
 
-#pasteModal{display:none;position:fixed;inset:0;background:rgba(15,23,42,0.8);backdrop-filter:blur(4px);z-index:100;align-items:center;justify-content:center}
-#pasteModal.show{display:flex}
+#pasteModal, #imageModal{display:none;position:fixed;inset:0;background:rgba(15,23,42,0.8);backdrop-filter:blur(4px);z-index:100;align-items:center;justify-content:center}
+#pasteModal.show, #imageModal.show{display:flex}
 .modal-inner{background:var(--bg1);border:1px solid var(--line);border-radius:var(--radius-lg);padding:32px;width:90%;max-width:500px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.3)}
 .modal-title{font-family:var(--disp);font-size:24px;letter-spacing:0.5px;margin-bottom:16px;color:var(--text)}
 .modal-ta{width:100%;height:160px;background:var(--bg);border:1px solid var(--line);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:16px;border-radius:var(--radius);resize:none;outline:none;line-height:1.5}
@@ -286,6 +297,21 @@ body{
     </div>
     <div class="pane-body">
       <div class="preview-grid" id="previewList"></div>
+      
+      <div class="qa-zone" id="qaZone" style="display:none;">
+        <div class="sec-label" style="display:flex; justify-content:space-between;">
+          <span>Verificador Visual (QA) con IA</span>
+          <span style="font-size:11px; font-weight:normal; color:var(--muted);">Sube 1 gráfica a la vez</span>
+        </div>
+        <label class="qa-drop" id="qaDrop">
+          Haz clic o arrastra tus gráficas (JPG/PNG) aquí para verificar precios y SKU
+          <input type="file" id="qaInput" accept="image/*" multiple style="display:none;">
+        </label>
+        <div id="qaLoading" style="display:none; color:var(--acc); margin-top:10px; font-size:13px; font-weight:600; text-align:center;">
+          Analizando imagen con IA (Puede tardar unos segundos)...
+        </div>
+        <div class="qa-results" id="qaResults"></div>
+      </div>
     </div>
   </div>
 
@@ -365,6 +391,21 @@ body{
     <div class="modal-row">
       <button class="btn-main" onclick="confirmPaste()">AGREGAR</button>
       <button class="btn-sec" onclick="closePaste()">Cancelar</button>
+    </div>
+  </div>
+</div>
+<div id="imageModal">
+  <div class="modal-inner" style="max-width:800px; display:flex; flex-direction:column; gap:16px; padding:24px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div class="modal-title" style="margin:0;">VISTA AMPLIADA</div>
+      <button onclick="document.getElementById('imageModal').classList.remove('show')" style="background:none; border:none; color:var(--muted); font-size:28px; cursor:pointer; line-height:1;">&times;</button>
+    </div>
+    <div style="flex:1; display:flex; justify-content:center; align-items:center; background:#090e17; border-radius:8px; border:1px solid var(--border); overflow:hidden; padding:16px;">
+      <img id="imageModalImg" style="max-width:100%; max-height:60vh; object-fit:contain;">
+    </div>
+    <div id="imageModalInfo" style="display:none; background:var(--bg2); padding:16px; border-radius:8px; border:1px solid var(--border);"></div>
+    <div class="modal-row" style="margin-top:8px;">
+      <button class="btn-sec" style="flex:1" onclick="document.getElementById('imageModal').classList.remove('show')">Cerrar Visualizador</button>
     </div>
   </div>
 </div>
@@ -458,7 +499,7 @@ function renderPreviews(done){
     var decLabel=d.precioDecimal;
     if(d.esM2)decLabel+='<span style="display:block;font-size:9px;margin-top:1px;line-height:1;text-align:center;">m\u00b2</span>';
     var hasCmr=d.precioCmr!='--'&&d.precioCmr!='';
-    var hasAntes=d.precioAntes!='--'&&d.precioAntes!='';
+    var hasAntes=d.precioAntes!='--'&&d.precioAntes!='—'&&d.precioAntes!=''&&d.precioAntes!=d.precioNormal&&d.precioAntes!=d.precioCmr;
     var pBlock='';
     if(d.stock==='AGOTADO'){
       pBlock='<div style="color:var(--muted);font-style:italic;margin-top:10px;font-size:14px;font-weight:500;">Producto sin precio (Agotado)</div>';
@@ -491,16 +532,30 @@ function openPaste(){document.getElementById('pasteModal').classList.add('show')
 function closePaste(){document.getElementById('pasteModal').classList.remove('show')}
 function confirmPaste(){
   var lines=document.getElementById('pasteArea').value.split('\n').map(function(l){return l.trim()}).filter(function(l){return l.startsWith('http')});
+  
+  var emptyCards = cards.filter(function(c){
+    var el = document.getElementById('ui-'+c.id);
+    var u = el ? el.value.trim() : c.url;
+    return !u;
+  });
+
   lines.forEach(function(url){
-    var id=++cardId;
-    cards.push({id:id,url:url,data:null,status:'empty'});
-    var list=document.getElementById('urlList'),row=document.createElement('div');
-    row.className='url-row';row.id='row-'+id;
-    row.innerHTML='<div class="url-idx" id="idx-'+id+'">'+id+'</div>'+
-      '<input class="url-input" id="ui-'+id+'" value="'+url+'" onchange="setUrl('+id+',this.value)" onkeydown="if(event.key===\'Enter\')fetchOne('+id+')"/>'+
-      '<span class="url-info" id="inf-'+id+'"></span>'+
-      '<button class="url-del" onclick="removeCard('+id+')" title="Eliminar">x</button>';
-    list.appendChild(row);
+    if(emptyCards.length > 0) {
+      var c = emptyCards.shift();
+      c.url = url;
+      var el = document.getElementById('ui-'+c.id);
+      if(el) el.value = url;
+    } else {
+      var id=++cardId;
+      cards.push({id:id,url:url,data:null,status:'empty'});
+      var list=document.getElementById('urlList'),row=document.createElement('div');
+      row.className='url-row';row.id='row-'+id;
+      row.innerHTML='<div class="url-idx" id="idx-'+id+'">'+id+'</div>'+
+        '<input class="url-input" id="ui-'+id+'" value="'+url+'" onchange="setUrl('+id+',this.value)" onkeydown="if(event.key===\'Enter\')fetchOne('+id+')"/>'+
+        '<span class="url-info" id="inf-'+id+'"></span>'+
+        '<button class="url-del" onclick="removeCard('+id+')" title="Eliminar">x</button>';
+      list.appendChild(row);
+    }
   });
   updateStats();closePaste();log('Agregadas '+lines.length+' URLs','info');
 }
@@ -521,7 +576,14 @@ var AM={'electrica':'el\u00e9ctrica','electricas':'el\u00e9ctricas','electrico':
 function fixAccents(t){if(!t)return t;return t.replace(/\b[a-zA-Z]+\b/g,function(w){var l=w.toLowerCase();if(!AM.hasOwnProperty(l))return w;var c=AM[l];if(w===w.toUpperCase())return c.toUpperCase();if(w[0]===w[0].toUpperCase())return c.charAt(0).toUpperCase()+c.slice(1);return c;});}
 
 function fmtP(raw){if(!raw&&raw!==0)return null;var n=parseFloat(String(raw).replace(/[^0-9.]/g,''));if(isNaN(n))return null;var p=n.toFixed(2).split('.');return parseInt(p[0],10).toLocaleString('en-US')+(p[1]&&p[1]!=='00'?'.'+p[1]:'');}
-function splitP(fmt){if(!fmt)return{e:'0',d:'.00'};var p=String(fmt).replace(/[S\/\s]/g,'').split('.');return{e:p[0],d:p[1]?'.'+p[1]:'.00'};}
+function splitP(fmt){
+  if(!fmt)return{e:'0',d:'.00'};
+  var cleanStr = String(fmt).replace(/[S\/\s]/g,'');
+  var p;
+  if(cleanStr.includes(',')) p = cleanStr.split(',');
+  else p = cleanStr.split('.');
+  return{e:p[0],d:p[1]?'.'+p[1]:'.00'};
+}
 
 function parseProduct(html,url){
   var rxND=new RegExp('<sc'+'ript[^>]+id=["\']__NEXT_DATA__["\'][^>]*>([\\s\\S]*?)<\\/sc'+'ript>','i');
@@ -544,41 +606,34 @@ function parseProduct(html,url){
 
   var marca=p.brandName||'--';
 
+  var esM2=nombre.toLowerCase().includes('m2')||nombre.toLowerCase().includes('m²');
   var pCMR=null,pReg=null,pAntes=null,descuento='--';
   try{
     var prices=p.variants[0].prices||[];
+    var hasCmrBadge=false;
+    try{var sb=JSON.stringify(p.variants[0].badges||[]);if(sb.toUpperCase().includes('CMR'))hasCmrBadge=true;}catch(e){}
     var hasCmrType=prices.some(function(x){var t=(x.type||'').toLowerCase();return t==='cmrprice'||t==='offerprice';});
     var hasNormalType=prices.some(function(x){var t=(x.type||'').toLowerCase();return t==='normalprice'||t==='regularprice'||t==='internetprice';});
-    var cmrVis=(hasCmrType&&hasNormalType)||html.includes('shade-red-text');
+    var cmrVis=(hasCmrType&&hasNormalType)||html.includes('shade-red-text')||html.includes('cmr-price')||hasCmrBadge;
+    
     prices.forEach(function(x){
-      var val=Array.isArray(x.price)?x.price[0]:x.price;
-      var num=parseFloat(String(val).replace(/[^0-9.]/g,''));
+      var val = x.price;
+      if(esM2 && x.unitPrice && x.unitPrice.price) {
+        val = x.unitPrice.price;
+      }
+      var valArray=Array.isArray(val)?val[0]:val;
+      var num=parseFloat(String(valArray).replace(/[^0-9.]/g,''));
       if(isNaN(num)||num<1)return;
       var t=(x.type||'').toLowerCase();
       if(x.crossed===true){if(!pAntes)pAntes=fmtP(num);}
-      else if(t==='cmrprice'||t==='offerprice'){if(cmrVis){if(!pCMR)pCMR=fmtP(num);}else{if(!pReg)pReg=fmtP(num);}}
+      else if(t==='cmrprice'||t==='offerprice'){if(!pCMR)pCMR=fmtP(num);}
       else if(t==='normalprice'||t==='regularprice'||t==='internetprice'||t==='eventprice'){if(!pReg)pReg=fmtP(num);}
     });
     if(pAntes===pReg||pAntes===pCMR)pAntes=null;
-    if(pCMR===pReg)pReg=null;
+    if(pCMR===pReg)pCMR=null;
+    if(!cmrVis&&pCMR){if(!pReg)pReg=pCMR;pCMR=null;}
     try{var db=p.variants[0].discountBadge;if(db)descuento=String(db.label||db.text||'--');}catch(e){}
   }catch(e){}
-
-  // M2
-  var esM2=nombre.toLowerCase().includes('m2');
-  if(esM2){
-    var m2P=[];
-    var m2El=html.match(/id="m2prices"\s+data-prices="([^"]+)"/i);
-    if(m2El)m2El[1].split(',').forEach(function(v){var n=parseFloat(v);if(!isNaN(n)&&n>0)m2P.push(n);});
-    var rxM=new RegExp('m2-price-value[^>]*>([0-9.,]+)','gi'),mM;
-    while((mM=rxM.exec(html))!==null){var n2=parseFloat(mM[1].replace(',','.'));if(!isNaN(n2)&&n2>1)m2P.push(n2);}
-    if(m2P.length){
-      m2P=m2P.filter(function(v,i){return m2P.indexOf(v)===i;});
-      m2P.sort(function(a,b){return a-b});
-      if(m2P.length>=2){pCMR=fmtP(m2P[0]);pReg=fmtP(m2P[1]);pAntes=null;}
-      else{pReg=fmtP(m2P[0]);pCMR=null;}
-    }
-  }
 
   var stock='DESCONOCIDO';
   if(p.isOutOfStock===false)stock='DISPONIBLE';
@@ -624,19 +679,25 @@ async function scrapeWithExt(url){
       clearTimeout(timeout);
       if(chrome.runtime.lastError)return reject(new Error(chrome.runtime.lastError.message));
       if(!r||!r.success)return reject(new Error(r?r.error:'Sin respuesta'));
-      try{
-        var cmrClass=r.cmrVisible?'<div class="shade-red-text"></div>':'';
-        var m2Tag=r.m2Prices&&r.m2Prices.length?'<div id="m2prices" data-prices="'+r.m2Prices.join(',')+'"></div>':'';
-        var skuTag=r.sku?'<div id="extsku" data-sku="'+r.sku+'"></div>':'';
-        var antesTag=r.precioAntes?'<div id="extantes" data-antes="'+r.precioAntes+'"></div>':'';
-        var fk=cmrClass+m2Tag+skuTag+antesTag+'<sc'+'ript id="__NEXT_DATA__">'+r.nextData+'</'+'script>';
-        resolve(parseProduct(fk,url));
-      }catch(e){reject(e)}
+      
+      // La extensión V2 ya parsea y devuelve el objeto listo en r.data
+      if(r.data) resolve(r.data);
+      else {
+        // Fallback for V1 extension
+        try{
+          var cmrClass=r.cmrVisible?'<div class="shade-red-text"></div>':'';
+          var m2Tag=r.m2Prices&&r.m2Prices.length?'<div id="m2prices" data-prices="'+r.m2Prices.join(',')+'"></div>':'';
+          var skuTag=r.sku?'<div id="extsku" data-sku="'+r.sku+'"></div>':'';
+          var antesTag=r.precioAntes?'<div id="extantes" data-antes="'+r.precioAntes+'"></div>':'';
+          var fk=cmrClass+m2Tag+skuTag+antesTag+'<sc'+'ript id="__NEXT_DATA__">'+r.nextData+'</'+'script>';
+          resolve(parseProduct(fk,url));
+        }catch(e){reject(e)}
+      }
     });
   });
 }
 async function scrapeUrl(url){
-  if(EXT_ID){try{if(await checkExt(EXT_ID)){log('Usando extension...','info');return await scrapeWithExt(url)}}catch(e){log('Extension fallo, usando proxy...','warn')}}
+  if(EXT_ID){try{if(await checkExt(EXT_ID)){log('Usando extension...','info');return await scrapeWithExt(url)}}catch(e){log('Ext fallo: '+e.message,'warn')}}
   var html=await fetchWithProxy(url);return parseProduct(html,url);
 }
 
@@ -662,10 +723,21 @@ async function fetchOne(id){
 async function fetchAll(){
   cards.forEach(function(c){var el=document.getElementById('ui-'+c.id);if(el&&el.value.trim())c.url=el.value.trim()});
   var pend=cards.filter(function(c){var el=document.getElementById('ui-'+c.id);var u=el?el.value.trim():c.url;return u&&(c.status==='empty'||c.status==='error')});
-  if(!pend.length){log('No hay URLs pendientes','warn');return}
+  if(!pend.length){
+    var done=cards.filter(function(c){var el=document.getElementById('ui-'+c.id);var u=el?el.value.trim():c.url;return u&&(c.status==='done');});
+    if(done.length > 0) {
+      if(confirm('¿Deseas volver a extraer los datos de todas las URLs actuales? (Esto actualizará la información)')) {
+        pend = done;
+      } else {
+        return;
+      }
+    } else {
+      log('No hay URLs pendientes','warn');return;
+    }
+  }
   var btn=document.getElementById('btnFetch');
   btn.disabled=true;btn.classList.add('loading');btn.textContent='EXTRAYENDO...';
-  var d=document.getElementById('logDrawer');if(!d.classList.contains('open'))d.classList.add('open');
+  // Console stays closed by default now, so user can enjoy the progress colors.
   for(var i=0;i<pend.length;i++){setProgress(Math.round((i/pend.length)*90));await fetchOne(pend[i].id)}
   setProgress(100);setTimeout(function(){setProgress(0)},1200);
   btn.disabled=false;btn.classList.remove('loading');btn.textContent='EXTRAER DATOS';
@@ -680,7 +752,7 @@ function generateJsx(target){
     var d=card.data;
     vc+='products['+i+']={nombre:"'+e2(d.nombre)+'",sku:"'+e2(d.sku)+'",marca:"'+e2(d.marca)+'",precioEntero:"'+e2(d.precioEntero)+'",precioDecimal:"'+e2(d.precioDecimal)+'",precioNormal:"'+e2(d.precioNormal)+'",precioCmr:"'+e2(d.precioCmr)+'",precioAntes:"'+e2(d.precioAntes)+'",stock:"'+e2(d.stock)+'"}\n;';
   });
-  var cmrC='var hasCmr=d.precioCmr!="--"&&d.precioCmr!="";\nvar hasAntes=d.precioAntes!="--"&&d.precioAntes!="";\n';
+  var cmrC='var hasCmr=d.precioCmr!="--"&&d.precioCmr!="";\nvar hasAntes=d.precioAntes!="--"&&d.precioAntes!="—"&&d.precioAntes!=""&&d.precioAntes!=d.precioNormal&&d.precioAntes!=d.precioCmr;\n';
   var jsx='';
   if(target==='ps'){
     jsx=['#target photoshop','// MTLKILLERS V1 - Photoshop','',vc,
@@ -748,7 +820,7 @@ function generateComplete(target){
     done.forEach(function(card,i){
       var d=card.data;
       var hasCmr=d.precioCmr!=='--'&&d.precioCmr!=='';
-      var hasAntes=d.precioAntes!=='--'&&d.precioAntes!=='';
+      var hasAntes=d.precioAntes!=='--'&&d.precioAntes!=='—'&&d.precioAntes!==''&&d.precioAntes!==d.precioNormal&&d.precioAntes!==d.precioCmr;
       var lname='LIMA '+(i+1);
       lines=lines.concat([
         '// Card #'+(i+1),
@@ -782,7 +854,7 @@ function generateComplete(target){
     done.forEach(function(card,i){
       var d=card.data;
       var hasCmr=d.precioCmr!=='--'&&d.precioCmr!=='';
-      var hasAntes=d.precioAntes!=='--'&&d.precioAntes!=='';
+      var hasAntes=d.precioAntes!=='--'&&d.precioAntes!=='—'&&d.precioAntes!==''&&d.precioAntes!==d.precioNormal&&d.precioAntes!==d.precioCmr;
       var v=i;
       lines=lines.concat([
         '// Card #'+(i+1),
@@ -819,12 +891,32 @@ function generateDocAI(target){
 
 function downloadExtension(){var a=document.createElement('a');a.href='https://viejogxbo.github.io/mtlkillers/MTLKILLERS_EXT.zip';a.download='MTLKILLERS_EXT.zip';a.click();log('Descargando extension...','info')}
 function connectExtension(){
+  var btn=event.currentTarget;
   var id=document.getElementById('extIdInput').value.trim();
   if(!id){log('Pega el ID primero','warn');return}
+  btn.disabled=true; btn.textContent='Conectando...';
   EXT_ID=id;localStorage.setItem('mtlkillers_ext_id',id);
   checkExt(id).then(function(ok){
-    if(ok){document.getElementById('extDot').classList.add('active');document.getElementById('extLabel').textContent='Extension activa';document.getElementById('extLabel').style.color='var(--green)';log('Extension conectada','ok');}
-    else{log('No se pudo conectar - verifica el ID','err');}
+    btn.disabled=false;
+    if(ok){
+      btn.textContent='¡Conectado!';
+      btn.style.borderColor='var(--green)';
+      btn.style.color='var(--green)';
+      setTimeout(function(){ btn.textContent='Conectar'; btn.style.borderColor=''; btn.style.color=''; }, 2000);
+      document.getElementById('extDot').classList.add('active');
+      document.getElementById('extLabel').textContent='Extension activa';
+      document.getElementById('extLabel').style.color='var(--green)';
+      log('Extension conectada','ok');
+    } else {
+      btn.textContent='Fallo (Ver Log)';
+      btn.style.borderColor='var(--red)';
+      btn.style.color='var(--red)';
+      setTimeout(function(){ btn.textContent='Conectar'; btn.style.borderColor=''; btn.style.color=''; }, 3000);
+      document.getElementById('extDot').classList.remove('active');
+      document.getElementById('extLabel').textContent='Extension desconectada';
+      document.getElementById('extLabel').style.color='var(--muted)';
+      log('Error conectando extension. Revisa el ID y asegurate de tenerla instalada.','err');
+    }
   });
 }
 
@@ -838,7 +930,236 @@ window.addEventListener('load',function(){
   }
 });
 addCard();addCard();addCard();
+// --- LÓGICA DE QA (Tesseract) ---
+function showQaZone() {
+  var doneCards = cards.filter(function(c) { return c.status === 'done' && c.data; });
+  var qaZone = document.getElementById('qaZone');
+  if(doneCards.length > 0) qaZone.style.display = 'block';
+  else qaZone.style.display = 'none';
+}
+
+var qaDrop = document.getElementById('qaDrop');
+var qaInput = document.getElementById('qaInput');
+
+qaDrop.addEventListener('dragover', function(e) { e.preventDefault(); qaDrop.classList.add('dragover'); });
+qaDrop.addEventListener('dragleave', function(e) { qaDrop.classList.remove('dragover'); });
+qaDrop.addEventListener('drop', function(e) {
+  e.preventDefault(); qaDrop.classList.remove('dragover');
+  if(e.dataTransfer.files && e.dataTransfer.files.length > 0) handleQaFiles(e.dataTransfer.files);
+});
+qaInput.addEventListener('change', function(e) {
+  if(e.target.files && e.target.files.length > 0) handleQaFiles(e.target.files);
+});
+
+async function handleQaFiles(files) {
+  document.getElementById('qaLoading').style.display = 'block';
+  // document.getElementById('qaResults').innerHTML = ''; // Limpiar anterior (Comentado para mantener historial)
+  
+  for(var i=0; i<files.length; i++) {
+    await processOneQaFile(files[i]);
+  }
+  document.getElementById('qaLoading').style.display = 'none';
+}
+async function preprocessImage(file) {
+  return new Promise(function(resolve) {
+    var img = new Image();
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      img.onload = function() {
+        var canvas = document.createElement('canvas');
+        
+        // Extraer solo la mitad inferior (50%) de la imagen
+        var sY = img.height * 0.50;
+        var sH = img.height - sY;
+        
+        var scale = 3; 
+        var w = img.width * scale;
+        var h = sH * scale;
+        
+        canvas.width = w; 
+        canvas.height = h * 2; // Apilar verticalmente para mantener un aspect ratio cuadrado (mejor para Tesseract)
+        var ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        
+        // Arriba: Normal
+        ctx.filter = 'grayscale(100%) contrast(200%)';
+        ctx.drawImage(img, 0, sY, img.width, sH, 0, 0, w, h);
+        
+        // Abajo: Invertido
+        ctx.filter = 'grayscale(100%) contrast(200%) invert(100%)';
+        ctx.drawImage(img, 0, sY, img.width, sH, 0, h, w, h);
+        
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function processOneQaFile(file) {
+  if(!file.type.startsWith('image/')) { log('QA: Archivo ignorado, no es imagen','warn'); return; }
+  
+  try {
+    var processedImageURL = await preprocessImage(file);
+    var result = await Tesseract.recognize(processedImageURL, 'spa', { 
+      // tessedit_pageseg_mode: '11', // Desactivado porque lee la textura del concreto como miles de letras basura
+      logger: function(m) { /* console.log(m) */ } 
+    });
+    var text = result.data.text.replace(/\s+/g, ' ').toUpperCase();
+    
+    var doneCards = cards.filter(function(c) { return c.status === 'done' && c.data; });
+    
+    // Check Logos
+    var logos = [];
+    if(text.includes('CMR') || text.includes('FALABELLA') || text.includes('DEBITO') || text.includes('DÉBITO')) logos.push('💳 CMR/Falabella');
+    if(text.includes('OPORTUNIDAD') || text.includes('UNICA') || text.includes('ÚNICA')) logos.push('🏷️ Op. Única');
+    if(text.includes('SCOP')) logos.push('🧱 SCOP');
+    if(text.includes('MAESTRO')) logos.push('🛠️ Maestro');
+    if(text.includes('CPP')) logos.push('🎨 CPP');
+    var logosText = logos.length > 0 ? logos.join(' | ') : 'Ninguno claro';
+
+    function checkColorProfile(f, cb) {
+      if(f.type !== 'image/jpeg') return cb('RGB', 72);
+      var r = new FileReader();
+      r.onload = function(e) {
+        try {
+          var v = new DataView(e.target.result);
+          if(v.getUint16(0, false) !== 0xFFD8) return cb('?', 72);
+          var len = v.byteLength, off = 2, isCmyk = false, dpi = 72;
+          while(off < len) {
+            var m = v.getUint16(off, false); off += 2;
+            if(m === 0xFFDA) break;
+            var segLen = v.getUint16(off, false);
+            if(m === 0xFFE0 && segLen >= 14) {
+              var ident = String.fromCharCode(v.getUint8(off), v.getUint8(off+1), v.getUint8(off+2), v.getUint8(off+3), v.getUint8(off+4));
+              if(ident === 'JFIF\0') {
+                var units = v.getUint8(off + 7);
+                var xDensity = v.getUint16(off + 8, false);
+                if(units === 1) dpi = xDensity;
+                else if(units === 2) dpi = Math.round(xDensity * 2.54);
+              }
+            }
+            if(m === 0xFFC0 || m === 0xFFC2) {
+              if(v.getUint8(off + 7) === 4) isCmyk = true;
+            }
+            off += segLen;
+          }
+          cb(isCmyk ? 'CMYK' : 'RGB', dpi);
+        } catch(err) { cb('RGB', 72); }
+      };
+      r.readAsArrayBuffer(f);
+    }
+
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var imgObj = new Image();
+      imgObj.onload = function() {
+        checkColorProfile(file, function(profileStr, dpi) {
+          var w = imgObj.width;
+          var h = imgObj.height;
+          var dimOk = (w===1080 && h===1080) || (w===1080 && h===1350) || (w===1080 && h===1920) || (w===1200 && h===1200);
+          var dimTag = dimOk ? '<span style="color:var(--green)">'+w+'x'+h+'px</span>' : '<span style="color:var(--red); font-weight:bold;">'+w+'x'+h+'px (⚠️ No estándar)</span>';
+          var profTag = profileStr === 'CMYK' ? '<span style="color:var(--red); font-weight:bold;">CMYK (⚠️ Incorrecto para Web)</span>' : '<span style="color:var(--green)">'+profileStr+'</span>';
+          var resTag = (dpi === 72 || dpi === 96) ? '<span style="color:var(--green)">'+dpi+' ppi</span>' : '<span style="color:var(--red); font-weight:bold;">'+dpi+' ppi (⚠️ Alta/Baja Res)</span>';
+
+        var uniqueId = 'qa-info-' + Date.now() + '-' + Math.floor(Math.random()*1000);
+        var headerHtml = '<div style="display:flex; gap:16px; margin-bottom:16px; background:var(--bg-dark); padding:16px; border-radius:8px; border:1px solid var(--border); align-items:center;">' +
+          '<img src="'+e.target.result+'" onclick="openQaModal(this.src, \''+uniqueId+'\')" style="width:100px; height:100px; object-fit:contain; border-radius:4px; border:1px solid #333; background:#000; cursor:pointer;" title="Clic para ampliar">' +
+          '<div style="display:flex; flex-direction:column; gap:6px;">' +
+            '<div style="font-size:14px; font-weight:600; color:var(--accent);">Análisis Completado ('+file.name+')</div>' +
+            '<div style="font-size:12px; color:var(--muted);"><strong style="color:#aaa;">Logos detectados:</strong> '+logosText+'</div>' +
+            '<div style="font-size:12px; color:var(--muted);"><strong style="color:#aaa;">Arte:</strong> '+dimTag+' | Perfil: '+profTag+' | Res: '+resTag+'</div>' +
+            '<details style="font-size:10px; color:#555; margin-top:4px; cursor:pointer;"><summary>Ver texto extraído por IA (Debug)</summary><div style="padding-top:4px;word-break:break-all;">'+text+'</div></details>' +
+          '</div>' +
+        '</div>';
+        
+        var itemsHtml = '';
+        var matchedCard = doneCards.find(function(c) {
+          return text.includes(c.data.sku) || file.name.includes(c.data.sku);
+        });
+
+        if(matchedCard) {
+          var d = matchedCard.data;
+          var skuPass = '<span class="qa-tag pass">✅ SKU OK</span>'; 
+          
+          function checkPriceMatch(priceStr) {
+            if(!priceStr || priceStr === '--') return null;
+            var clean = String(priceStr).replace('S/','').replace(/ /g,'');
+            if(text.includes(clean) || text.includes(clean.replace('.','.'))) return 'full';
+            var parts = clean.split(/[,.]/);
+            if(parts.length === 2 && text.includes(parts[0]) && text.includes(parts[1])) return 'full';
+            var onlyDigitsText = text.replace(/[^0-9]/g, '');
+            var onlyDigitsPrice = clean.replace(/[^0-9]/g, '');
+            if(onlyDigitsPrice.length > 0 && onlyDigitsText.includes(onlyDigitsPrice)) return 'full';
+            if(parts.length >= 2 && text.includes(parts[0])) return 'partial';
+            return 'fail';
+          }
+
+          var cmrPass = '';
+          if(d.precioCmr && d.precioCmr !== '--') {
+            var cleanCmr = String(d.precioCmr).replace('S/','').replace(/ /g,'');
+            var matchSt = checkPriceMatch(d.precioCmr);
+            if(matchSt === 'full') cmrPass = '<span class="qa-tag pass">✅ CMR OK</span>';
+            else if(matchSt === 'partial') cmrPass = '<span class="qa-tag pass" style="background:rgba(255,193,7,0.15);color:#ffc107;">⚠️ CMR ('+cleanCmr.split(/[,.]/)[0]+')</span>';
+            else cmrPass = '<span class="qa-tag fail">❌ CMR ('+cleanCmr+')</span>';
+          }
+          
+          var regPass = '';
+          if(d.precioNormal && d.precioNormal !== '--') {
+            var cleanReg = String(d.precioNormal).replace('S/','').replace(/ /g,'');
+            var matchSt2 = checkPriceMatch(d.precioNormal);
+            if(matchSt2 === 'full') regPass = '<span class="qa-tag pass">✅ Regular OK</span>';
+            else if(matchSt2 === 'partial') regPass = '<span class="qa-tag pass" style="background:rgba(255,193,7,0.15);color:#ffc107;">⚠️ Reg ('+cleanReg.split(/[,.]/)[0]+')</span>';
+            else regPass = '<span class="qa-tag fail">❌ Reg ('+cleanReg+')</span>';
+          }
+          
+          itemsHtml += '<div class="qa-item">' +
+            '<div style="font-weight:600;width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="'+d.nombre+'">'+d.sku+' | '+d.nombre+'</div>' +
+            '<div style="display:flex;gap:4px;">' + skuPass + cmrPass + regPass + '</div>' +
+          '</div>';
+        } else {
+          itemsHtml += '<div class="qa-item" style="border-left-color:var(--red); color:var(--red); padding:16px;">' +
+            '❌ No se detectó a qué producto pertenece esta imagen. Asegúrate de extraer la URL del producto primero, o nombra el archivo con el SKU (ej: 1988786.jpg).' +
+          '</div>';
+        }
+
+        var container = document.createElement('div');
+        container.style.borderBottom = '1px solid var(--border)';
+        container.style.paddingBottom = '16px';
+        container.style.marginBottom = '16px';
+        container.innerHTML = headerHtml + '<div id="'+uniqueId+'">' + itemsHtml + '</div>';
+        document.getElementById('qaResults').prepend(container);
+        });
+      };
+      imgObj.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+
+  } catch(e) {
+    log('Error en QA: ' + e.message, 'err');
+  }
+}
+
+function openQaModal(src, infoId) {
+  document.getElementById('imageModalImg').src = src;
+  var infoHtml = document.getElementById(infoId).innerHTML;
+  var modalInfoBlock = document.getElementById('imageModalInfo');
+  modalInfoBlock.innerHTML = infoHtml;
+  modalInfoBlock.style.display = 'block';
+  document.getElementById('imageModal').classList.add('show');
+}
+
+// Hook showQaZone into updateSections
+var oldUpdateSections = updateSections;
+updateSections = function() {
+  oldUpdateSections();
+  showQaZone();
+};
+
 log('MTLKILLERS V3 listo','ok');
 </script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </body>
 </html>
